@@ -39,6 +39,7 @@ function DirectPlayer({ id, start, onEnded, onFail, loop, bare, paused, title = 
   const [src, setSrc] = useState('')
   const [panel, setPanel] = useState(false)
   const [audioSrc, setAudioSrc] = useState('')
+  const readyFor = useRef('')
   const [stats, setStats] = useState(settings.showStats)
   const mountAt = useRef(performance.now())
   const [marks, setMarks] = useState<Record<string, number>>({})
@@ -92,7 +93,8 @@ function DirectPlayer({ id, start, onEnded, onFail, loop, bare, paused, title = 
     if (!audio) return
     const sync = () => {
       if (document.hidden) return
-      if (Math.abs(audio.currentTime - video.currentTime) > 0.25) audio.currentTime = video.currentTime
+      // Recalage seulement si l'écart est net et qu'aucun recalage n'est en cours.
+      if (!audio.seeking && Math.abs(audio.currentTime - video.currentTime) > 0.4) audio.currentTime = video.currentTime
       // L'image joue mais pas le son (piste arrivée en retard, fin de boucle…) : on relance le son.
       if (!video.paused && audio.paused && audio.readyState >= 2) audio.play().catch(() => {})
     }
@@ -166,12 +168,14 @@ function DirectPlayer({ id, start, onEnded, onFail, loop, bare, paused, title = 
           preload="auto"
           loop={loop}
           onCanPlay={(e) => {
+            // Une seule fois par piste : recaler le son relance « canplay » (boucle infinie sinon).
+            if (readyFor.current === audioSrc) return
+            readyFor.current = audioSrc
             mark('son')
             log(bare ? 'short' : 'vidéo', `${id} son prêt (${audioSrc.startsWith('blob:') ? 'blob' : 'direct'})`)
-            // Piste prête après le démarrage de l'image : on la cale et on la lance.
             const vid = v.current
             if (vid && !vid.paused) {
-              e.currentTarget.currentTime = vid.currentTime
+              if (Math.abs(e.currentTarget.currentTime - vid.currentTime) > 0.5) e.currentTarget.currentTime = vid.currentTime
               e.currentTarget.play().catch(() => {})
             }
           }}
