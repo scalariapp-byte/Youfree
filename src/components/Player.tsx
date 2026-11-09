@@ -3,6 +3,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { useSettings, updatePosition, saveSettings } from '../lib/storage'
 import { Icon } from './Icon'
+import { clearNowPlaying, setNowPlaying } from '../lib/background'
+import { pauseMusic } from '../lib/music'
 import { canUseLocal } from '../lib/nativeFetch'
 import { getStreams, type Streams } from '../lib/stream'
 
@@ -29,7 +31,7 @@ function loadYT() {
 }
 
 /** Lecteur natif sans pub : vidéo et audio séparés, synchronisés. */
-function DirectPlayer({ id, start, onEnded, onFail, loop, bare, paused }: { id: string; start: number; onEnded?: () => void; onFail: (why: string) => void; loop?: boolean; bare?: boolean; paused?: boolean }) {
+function DirectPlayer({ id, start, onEnded, onFail, loop, bare, paused, title = '', artist = '' }: { id: string; start: number; onEnded?: () => void; onFail: (why: string) => void; loop?: boolean; bare?: boolean; paused?: boolean; title?: string; artist?: string }) {
   const settings = useSettings()
   const [s, setS] = useState<Streams | null>(null)
   const [src, setSrc] = useState('')
@@ -75,12 +77,29 @@ function DirectPlayer({ id, start, onEnded, onFail, loop, bare, paused }: { id: 
     video.currentTime = t0
     if (!audio) return
     const sync = () => {
+      if (document.hidden) return
       if (Math.abs(audio.currentTime - video.currentTime) > 0.25) audio.currentTime = video.currentTime
     }
+    // En arrière-plan, le téléphone suspend l'image : on laisse le son continuer,
+    // puis on recale l'image sur le son au retour.
+    const onVis = () => {
+      if (!document.hidden && !audio.paused) {
+        video.currentTime = audio.currentTime
+        video.play().catch(() => {})
+      }
+    }
+    document.addEventListener('visibilitychange', onVis)
+    // Notification et contrôles système (sauf Shorts) ; la musique se met en pause.
+    const media = () => (document.hidden ? audio : video)
+    const announce = () =>
+      !bare && setNowPlaying({ title: title || 'Youfree', artist, artwork: `https://i.ytimg.com/vi/${id}/hqdefault.jpg` }, !media().paused, { toggle: () => (media().paused ? media().play() : media().pause()) })
+    const onPlay = () => (pauseMusic(), announce())
+    video.addEventListener('play', onPlay)
+    video.addEventListener('pause', announce)
     const on: [string, () => void][] = [
       ['play', () => (sync(), audio.play().catch(() => {}))],
-      ['pause', () => audio.pause()],
-      ['waiting', () => audio.pause()],
+      ['pause', () => !document.hidden && audio.pause()],
+      ['waiting', () => !document.hidden && audio.pause()],
       ['playing', () => (sync(), audio.play().catch(() => {}))],
       ['seeked', sync],
       ['ratechange', () => (audio.playbackRate = video.playbackRate)],
@@ -93,10 +112,14 @@ function DirectPlayer({ id, start, onEnded, onFail, loop, bare, paused }: { id: 
     }, 2000)
     return () => {
       on.forEach(([e, f]) => video.removeEventListener(e, f))
+      document.removeEventListener('visibilitychange', onVis)
+      video.removeEventListener('play', onPlay)
+      video.removeEventListener('pause', announce)
+      if (!bare) clearNowPlaying()
       clearInterval(timer)
       if (video.currentTime > 5) updatePosition(id, video.currentTime)
     }
-  }, [s, src, id, start])
+  }, [s, src, id, start, bare, title, artist])
   if (!s) return <div className="player loading-player" />
   return (
     <div className="player">
@@ -177,11 +200,11 @@ function DirectPlayer({ id, start, onEnded, onFail, loop, bare, paused }: { id: 
   )
 }
 
-export function Player(props: { id: string; start?: number; onEnded?: () => void; loop?: boolean; bare?: boolean; paused?: boolean }) {
+export function Player(props: { id: string; start?: number; onEnded?: () => void; loop?: boolean; bare?: boolean; paused?: boolean; title?: string; artist?: string }) {
   const settings = useSettings()
   const [failed, setFailed] = useState<{ id: string; why: string } | null>(null)
   if (settings.player === 'direct' && canUseLocal() && failed?.id !== props.id)
-    return <DirectPlayer id={props.id} start={props.start ?? 0} onEnded={props.onEnded} onFail={(why) => setFailed({ id: props.id, why })} loop={props.loop} bare={props.bare} paused={props.paused} />
+    return <DirectPlayer id={props.id} start={props.start ?? 0} onEnded={props.onEnded} onFail={(why) => setFailed({ id: props.id, why })} loop={props.loop} bare={props.bare} paused={props.paused} title={props.title} artist={props.artist} />
   if (props.paused) return <div className="player" />
   return (
     <>

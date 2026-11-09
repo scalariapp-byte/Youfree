@@ -15,6 +15,7 @@ public class MainActivity extends BridgeActivity implements ModifiedMainActivity
     @Override
     public void onCreate(Bundle savedInstanceState) {
         registerPlugin(YoufreeDownloaderPlugin.class);
+        registerPlugin(BackgroundPlaybackPlugin.class);
         super.onCreate(savedInstanceState);
     }
 

@@ -87,7 +87,7 @@ export function Watch() {
   return (
     <div className="watch">
       <div className="watch-main">
-        <Player key={`${id}-${tParam ?? ''}`} id={id} start={start} onEnded={() => autoplay && next && nav(`/watch/${next.id}`)} />
+        <Player key={`${id}-${tParam ?? ''}`} id={id} start={start} title={v ? decode(v.title) : ''} artist={v?.channelTitle} onEnded={() => autoplay && next && nav(`/watch/${next.id}`)} />
         {v && (
           <>
             <h1 className="watch-title">{decode(v.title)}</h1>

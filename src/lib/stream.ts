@@ -29,10 +29,13 @@ export let lastStreamError = ''
 async function fetchStreams(id: string): Promise<Streams> {
   const yt = await (await import('./innertube')).getClient()
   const errors: string[] = []
-  for (const client of CLIENTS) {
+  const best = localStorage.getItem('youfree:client')
+  const order = best ? [best, ...CLIENTS.filter((c) => c !== best)] : [...CLIENTS]
+  for (const client of order as (typeof CLIENTS)[number][]) {
     try {
       const info: any = await yt.getBasicInfo(id, { client })
       const sd = info.streaming_data
+      if (sd) localStorage.setItem('youfree:client', client)
       if (!sd) throw new Error(info.playability_status?.reason || info.playability_status?.status || 'pas de flux')
       const formats: Fmt[] = [...(sd.formats ?? []), ...(sd.adaptive_formats ?? [])]
         .filter((f: any) => f.url)
