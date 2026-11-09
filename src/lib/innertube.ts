@@ -218,8 +218,17 @@ export async function trending(categoryId?: string, pageToken?: string) {
   return { videos: toVideos(r.videos), next: remember(r) }
 }
 
-export async function search(q: string, pageToken?: string) {
-  const r = pageToken ? await resume(pageToken) : await (await yt()).search(q, { type: 'video' })
+export async function suggest(q: string) {
+  return (await yt()).getSearchSuggestions(q).catch(() => [] as string[])
+}
+
+export async function search(q: string, pageToken?: string, filter = '') {
+  const f: any = { type: 'video' }
+  if (filter === 'short') f.duration = 'under_three_mins'
+  if (filter === 'long') f.duration = 'over_twenty_mins'
+  if (filter === 'today' || filter === 'week' || filter === 'month') f.upload_date = filter
+  if (filter === 'popular') f.prioritize = 'popularity'
+  const r = pageToken ? await resume(pageToken) : await (await yt()).search(q, f)
   return { videos: toVideos(r.videos), next: remember(r) }
 }
 

@@ -4,6 +4,7 @@ import { useAuth } from '../lib/auth'
 import { useAllSubs } from '../lib/useSubs'
 import { useSettings } from '../lib/storage'
 import { Icon } from './Icon'
+import { suggest } from '../lib/youtube'
 
 export function Logo({ compact = false }: { compact?: boolean }) {
   return (
@@ -30,33 +31,91 @@ function useTheme() {
   }, [theme])
 }
 
+const RECENT = 'youfree:recentSearches'
+const getRecent = (): string[] => {
+  try {
+    return JSON.parse(localStorage.getItem(RECENT) || '[]')
+  } catch {
+    return []
+  }
+}
+const addRecent = (q: string) => {
+  try {
+    localStorage.setItem(RECENT, JSON.stringify([q, ...getRecent().filter((x) => x !== q)].slice(0, 12)))
+  } catch {
+    /* ignore */
+  }
+}
+
 function SearchBar({ onDone, autoFocus }: { onDone?: () => void; autoFocus?: boolean }) {
   const [params] = useSearchParams()
   const [q, setQ] = useState(params.get('q') ?? '')
+  const [open, setOpen] = useState(false)
+  const [sugg, setSugg] = useState<string[]>([])
+  const [sel, setSel] = useState(-1)
   const nav = useNavigate()
   const ref = useRef<HTMLInputElement>(null)
   useEffect(() => {
     if (autoFocus) ref.current?.focus()
   }, [autoFocus])
-  const submit = (e: FormEvent) => {
-    e.preventDefault()
-    const v = q.trim()
+  // Suggestions pendant la frappe (anti-rebond 120 ms).
+  useEffect(() => {
+    setSel(-1)
+    if (!q.trim()) return setSugg([])
+    const t = setTimeout(() => suggest(q).then(setSugg, () => setSugg([])), 120)
+    return () => clearTimeout(t)
+  }, [q])
+
+  const go = (v: string) => {
+    v = v.trim()
     if (!v) return
-    // Coller un lien YouTube ouvre directement la vidéo (ou le Short).
     const short = v.match(/shorts\/([\w-]{11})/)
     const m = v.match(/(?:youtu\.be\/|v=|embed\/|live\/)([\w-]{11})/)
+    if (!short && !m) addRecent(v)
+    setQ(v)
+    setOpen(false)
     nav(short ? `/shorts?v=${short[1]}` : m ? `/watch/${m[1]}` : `/search?q=${encodeURIComponent(v)}`)
     ref.current?.blur()
     onDone?.()
   }
+  const list = q.trim() ? [...getRecent().filter((r) => r.toLowerCase().startsWith(q.toLowerCase()) && r !== q).slice(0, 3), ...sugg.filter((x) => x !== q)].slice(0, 10) : getRecent()
+  const submit = (e: FormEvent) => {
+    e.preventDefault()
+    go(sel >= 0 ? list[sel] : q)
+  }
   return (
     <form className="search" onSubmit={submit} role="search">
       <Icon name="search" size={18} />
-      <input ref={ref} value={q} onChange={(e) => setQ(e.target.value)} placeholder="Rechercher ou coller un lien" aria-label="Rechercher" enterKeyHint="search" />
+      <input
+        ref={ref}
+        value={q}
+        onChange={(e) => (setQ(e.target.value), setOpen(true))}
+        onFocus={() => setOpen(true)}
+        onBlur={() => setTimeout(() => setOpen(false), 150)}
+        onKeyDown={(e) => {
+          if (e.key === 'ArrowDown') (e.preventDefault(), setSel((i) => Math.min(i + 1, list.length - 1)))
+          if (e.key === 'ArrowUp') (e.preventDefault(), setSel((i) => Math.max(i - 1, -1)))
+          if (e.key === 'Escape') setOpen(false)
+        }}
+        placeholder="Rechercher ou coller un lien"
+        aria-label="Rechercher"
+        enterKeyHint="search"
+        autoComplete="off"
+      />
       {q && (
-        <button type="button" className="icon-btn small" onClick={() => setQ('')} aria-label="Effacer">
+        <button type="button" className="icon-btn small" onClick={() => (setQ(''), ref.current?.focus())} aria-label="Effacer">
           <Icon name="close" size={16} />
         </button>
+      )}
+      {open && list.length > 0 && (
+        <ul className="suggest">
+          {list.map((x, i) => (
+            <li key={x} className={i === sel ? 'sel' : ''} onMouseDown={(e) => (e.preventDefault(), go(x))}>
+              <Icon name={getRecent().includes(x) ? 'history' : 'search'} size={16} />
+              <span>{x}</span>
+            </li>
+          ))}
+        </ul>
       )}
     </form>
   )

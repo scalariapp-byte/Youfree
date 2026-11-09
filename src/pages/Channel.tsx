@@ -16,12 +16,12 @@ export function Channel() {
   const [extra, setExtra] = useState<{ videos: Video[]; next?: string }>({ videos: [] })
   const { showShorts } = useSettings()
   const [tab, setTab] = useState<'videos' | 'shorts'>('videos')
-  const ch = useAsync(() => getChannel(id), [id])
-  const shorts = useAsync(() => (tab === 'shorts' ? getChannelShorts(id) : Promise.resolve(undefined)), [id, tab])
+  const ch = useAsync(() => getChannel(id), [id], `ch:${id}`)
+  const shorts = useAsync(() => (tab === 'shorts' ? getChannelShorts(id) : Promise.resolve(undefined)), [id, tab], tab === 'shorts' ? `chs:${id}` : undefined)
   const vids = useAsync(() => {
     setExtra({ videos: [] })
     return getPlaylistVideos('UU' + id.slice(2), 30)
-  }, [id])
+  }, [id], `chv:${id}`)
   const next = extra.next ?? vids.data?.next
   const more = async () => {
     const r = await getPlaylistVideos('UU' + id.slice(2), 30, next)

@@ -1,6 +1,9 @@
 import { Children } from 'react'
 import { Link } from 'react-router-dom'
-import type { Video } from '../lib/youtube'
+import { getVideos, type Video } from '../lib/youtube'
+import { prefetch } from '../lib/useAsync'
+import { getStreams } from '../lib/stream'
+import { canUseLocal } from '../lib/nativeFetch'
 import { compact, duration, ago, decode } from '../lib/format'
 import { toggleWatchLater, useWatchLater, type StoredVideo } from '../lib/storage'
 import { Empty } from './ErrorBox'
@@ -23,6 +26,12 @@ interface Props {
   onRemove?: () => void
 }
 
+/** Au toucher : on précharge les infos et les flux pour une ouverture instantanée. */
+export function warm(id: string) {
+  prefetch(`v:${id}`, async () => (await getVideos([id]))[0])
+  if (canUseLocal()) getStreams(id).catch(() => {})
+}
+
 export function VideoCard({ video, progress, subtitle, onRemove }: Props) {
   const later = useWatchLater()
   const saved = later.some((x) => x.id === video.id)
@@ -33,7 +42,7 @@ export function VideoCard({ video, progress, subtitle, onRemove }: Props) {
     [full && full.views ? `${compact(full.views)} vues` : '', full?.publishedAt ? ago(full.publishedAt) : ''].filter(Boolean).join(' · ')
 
   return (
-    <article className="card">
+    <article className="card" onPointerDown={() => warm(video.id)}>
       <Link to={`/watch/${video.id}${progress ? `?t=${Math.floor(progress)}` : ''}`} className="thumb">
         <img src={video.thumbnail} alt="" loading="lazy" />
         {full?.live ? <span className="badge live">EN DIRECT</span> : video.durationSec > 0 && <span className="badge">{duration(video.durationSec)}</span>}

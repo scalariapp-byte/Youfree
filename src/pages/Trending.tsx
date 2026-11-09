@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { VideoCard, VideoGrid, Skeletons, ShortsShelf } from '../components/VideoCard'
 import { ErrorBox } from '../components/ErrorBox'
 import { ThemeChips } from '../components/Themes'
@@ -10,10 +10,10 @@ export function Trending() {
   const [cat, setCat] = useState<string | undefined>()
   const [extra, setExtra] = useState<{ videos: Video[]; next?: string }>({ videos: [] })
   const settings = useSettings()
+  useEffect(() => setExtra({ videos: [] }), [cat, settings.region, settings.hideGaming, settings.source])
   const res = useAsync(() => {
-    setExtra({ videos: [] })
     return getTrending(cat)
-  }, [cat, settings.region, settings.hideGaming, settings.source])
+  }, [cat, settings.region, settings.hideGaming, settings.source], `pop:${settings.source}:${settings.region}:${cat ?? ''}`)
 
   const next = extra.next ?? res.data?.next
   const more = async () => {

@@ -165,9 +165,17 @@ export async function getTrending(categoryId?: string, pageToken?: string) {
 }
 
 /** Recherche (100 unités de quota) + détails (1 unité). */
-export async function search(q: string, pageToken?: string) {
+/** Filtres de recherche : durée, date, popularité. */
+export type SearchFilter = '' | 'short' | 'long' | 'today' | 'week' | 'month' | 'popular'
+
+export async function suggest(q: string): Promise<string[]> {
+  if (!q.trim() || !useLocal()) return []
+  return (await loadLocal()).suggest(q)
+}
+
+export async function search(q: string, pageToken?: string, filter: SearchFilter = '') {
   if (useLocal()) {
-    const r = await (await loadLocal()).search(q, pageToken)
+    const r = await (await loadLocal()).search(q, pageToken, filter)
     return { videos: applyFilters(r.videos), next: r.next }
   }
   const data = await call('search', {
@@ -176,8 +184,12 @@ export async function search(q: string, pageToken?: string) {
     q,
     maxResults: 30,
     regionCode: getSettings().region,
+    relevanceLanguage: 'fr',
     safeSearch: 'none',
     pageToken,
+    order: filter === 'popular' ? 'viewCount' : undefined,
+    videoDuration: filter === 'short' ? 'short' : filter === 'long' ? 'long' : undefined,
+    publishedAfter: { today: 1, week: 7, month: 30 }[filter as 'today'] ? new Date(Date.now() - { today: 1, week: 7, month: 30 }[filter as 'today'] * 86400_000).toISOString() : undefined,
   })
   const ids = data.items.map((i: any) => i.id.videoId).filter(Boolean)
   const videos = ids.length ? await getVideos(ids) : []

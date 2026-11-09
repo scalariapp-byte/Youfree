@@ -159,6 +159,10 @@ export function Settings() {
           </select>
         </label>
         <label className="toggle">
+          <input type="radio" name="player" checked={s.player === 'direct'} disabled={!canUseLocal()} onChange={() => saveSettings({ player: 'direct' })} />
+          Lecteur Youfree sans pub (le téléphone lit les flux directement ; app Android)
+        </label>
+        <label className="toggle">
           <input type="radio" name="player" checked={s.player === 'nocookie'} onChange={() => saveSettings({ player: 'nocookie' })} />
           Lecteur YouTube sans cookies (fiable, reprise de lecture ; YouTube peut encore insérer une pub sur certaines vidéos)
         </label>

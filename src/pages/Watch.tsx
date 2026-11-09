@@ -50,14 +50,14 @@ export function Watch() {
   const localSubs = useLocalSubs()
   const { google } = useAllSubs()
 
-  const video = useAsync(async () => (await getVideos([id]))[0], [id])
+  const video = useAsync(async () => (await getVideos([id]))[0], [id], `v:${id}`)
   const v = video.data
-  const channel = useAsync(() => (v ? getChannel(v.channelId) : Promise.resolve(undefined)), [v?.channelId])
+  const channel = useAsync(() => (v ? getChannel(v.channelId) : Promise.resolve(undefined)), [v?.channelId], v ? `ch:${v.channelId}` : undefined)
   const more = useAsync(
     () => (v ? getPlaylistVideos('UU' + v.channelId.slice(2), 12).then((r) => r.videos.filter((x) => x.id !== id)) : Promise.resolve([])),
     [v?.channelId, id],
   )
-  const comments = useAsync(() => getComments(id), [id])
+  const comments = useAsync(() => getComments(id), [id], `cm:${id}`)
 
   useEffect(() => {
     if (v) recordWatch(toStored(v))

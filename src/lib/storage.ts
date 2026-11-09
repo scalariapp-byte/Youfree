@@ -8,7 +8,7 @@ export interface Settings {
   showShorts: boolean
   theme: 'dark' | 'light' | 'system'
   hideGaming: boolean
-  player: 'nocookie' | 'invidious'
+  player: 'direct' | 'nocookie' | 'invidious'
   source: 'auto' | 'api' | 'local'
   invidiousInstance: string
 }
@@ -40,7 +40,7 @@ const DEFAULT_SETTINGS: Settings = {
   showShorts: true,
   theme: 'dark',
   hideGaming: false,
-  player: 'nocookie',
+  player: 'direct',
   source: 'auto',
   invidiousInstance: 'https://yewtu.be',
 }

@@ -387,3 +387,25 @@ button.pill:hover { background: var(--surface-3); }
   .watch-side .card { grid-template-columns: 150px 1fr; }
   .page-title { font-size: 1.25rem; }
 }
+
+/* ============ Suggestions, lecteur natif ============ */
+.search { position: relative; }
+.suggest {
+  position: absolute; top: 48px; left: 0; right: 0; z-index: 50; margin: 0; padding: 6px; list-style: none;
+  background: var(--bg-elev); border: 1px solid var(--border); border-radius: 16px; box-shadow: var(--shadow); max-height: 60vh; overflow-y: auto;
+}
+.suggest li { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 10px; color: var(--text); cursor: pointer; font-weight: 500; }
+.suggest li svg { color: var(--muted); flex: none; }
+.suggest li:hover, .suggest li.sel { background: var(--surface-2); }
+.player video { position: absolute; inset: 0; width: 100%; height: 100%; background: #000; }
+.short-frame .player { position: absolute; inset: 0; aspect-ratio: auto; border-radius: 0; }
+.short-frame .player video { object-fit: cover; }
+.loading-player { background: linear-gradient(90deg, #000, #15181d, #000); background-size: 200% 100%; animation: shimmer 1.2s linear infinite; }
+@keyframes shimmer { to { background-position: -200% 0; } }
+.quality {
+  position: absolute; top: 10px; right: 10px; z-index: 2; height: 30px; padding: 0 8px; border-radius: 8px; border: 0;
+  background: rgb(0 0 0 / .6); color: #fff; font: inherit; font-size: .8rem; opacity: .85;
+}
+.card, .short-card, .chip, .btn, .tabbar a { touch-action: manipulation; }
+.content > .page { animation: fade .18s ease-out; }
+@keyframes fade { from { opacity: 0; transform: translateY(4px); } }

@@ -9,6 +9,9 @@ import { toggleWatchLater, useSettings, useWatchLater } from '../lib/storage'
 import { getShorts, getVideos, type Video } from '../lib/youtube'
 import { toStored } from '../components/VideoCard'
 import { THEMES } from '../components/Themes'
+import { Player } from '../components/Player'
+import { getStreams } from '../lib/stream'
+import { canUseLocal } from '../lib/nativeFetch'
 
 function ShortSlide({ v, active }: { v: Video; active: boolean }) {
   const settings = useSettings()
@@ -21,7 +24,9 @@ function ShortSlide({ v, active }: { v: Video; active: boolean }) {
   return (
     <div className="short-slide" data-id={v.id}>
       <div className="short-frame">
-        {active ? (
+        {active && settings.player === 'direct' && canUseLocal() ? (
+          <Player id={v.id} loop />
+        ) : active ? (
           <iframe src={src} allow="autoplay; fullscreen; encrypted-media; picture-in-picture" referrerPolicy="strict-origin-when-cross-origin" title={v.title} />
         ) : (
           <img src={v.thumbnail} alt="" loading="lazy" onError={(e) => (e.currentTarget.src = `https://i.ytimg.com/vi/${v.id}/hqdefault.jpg`)} />
@@ -127,6 +132,8 @@ export function Shorts() {
   useEffect(() => {
     const i = items.findIndex((x) => x.id === active)
     if (i >= items.length - 4) loadMore()
+    // Précharge les flux des deux Shorts suivants : le défilement est instantané.
+    if (canUseLocal()) items.slice(i + 1, i + 3).forEach((x) => getStreams(x.id).catch(() => {}))
   }, [active, items, loadMore])
 
   return (

@@ -39,9 +39,9 @@ export function Home() {
   const [cat, setCat] = useState<string | undefined>()
   const key = all.map((c) => c.id).join(',')
 
-  const feed = useAsync(() => (all.length ? getSubscriptionFeed(all) : Promise.resolve([])), [key, settings.hideGaming, settings.source])
-  const popular = useAsync(() => getTrending(cat), [cat, settings.region, settings.hideGaming, settings.source])
-  const shorts = useAsync(() => (settings.showShorts ? getShorts(cat) : Promise.resolve({ videos: [], next: undefined })), [cat, settings.showShorts, settings.region, settings.source])
+  const feed = useAsync(() => (all.length ? getSubscriptionFeed(all) : Promise.resolve([])), [key, settings.hideGaming, settings.source], `feed:${settings.source}:${key}`)
+  const popular = useAsync(() => getTrending(cat), [cat, settings.region, settings.hideGaming, settings.source], `pop:${settings.source}:${settings.region}:${cat ?? ''}`)
+  const shorts = useAsync(() => (settings.showShorts ? getShorts(cat) : Promise.resolve({ videos: [], next: undefined })), [cat, settings.showShorts, settings.region, settings.source], `sh:${settings.source}:${settings.region}:${cat ?? ''}:${settings.showShorts}`)
 
   if (!hasCredentials()) return <Onboarding />
 
