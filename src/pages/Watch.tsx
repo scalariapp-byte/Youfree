@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { Player } from '../components/Player'
 import { VideoCard, toStored, Tr } from '../components/VideoCard'
 import { useTr } from '../lib/titleTr'
+import { shareVideo } from '../lib/share'
 import { ErrorBox } from '../components/ErrorBox'
 import { useAsync } from '../lib/useAsync'
 import { getChannel, getComments, getPlaylistVideos, getVideos } from '../lib/youtube'
@@ -129,8 +130,8 @@ export function Watch() {
                 <button className="pill" onClick={() => toggleWatchLater(toStored(v))}>
                   <Icon name={later.some((x) => x.id === v.id) ? 'check' : 'clock'} size={18} /> Plus tard
                 </button>
-                <button className="pill" onClick={() => navigator.clipboard?.writeText(`https://youtu.be/${v.id}`)} title="Copier le lien YouTube">
-                  <Icon name="link" size={18} /> Lien
+                <button className="pill" onClick={() => shareVideo(v.id, decode(v.title))}>
+                  <Icon name="share" size={18} /> Partager
                 </button>
               </div>
             </div>

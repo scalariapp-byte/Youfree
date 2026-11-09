@@ -789,3 +789,12 @@ body { background: var(--bg); }
 /* Boutons des Shorts à gauche */
 .short-overlay.left { flex-direction: row-reverse; }
 .short-overlay.left .short-text { text-align: right; }
+/* Glisser-déposer */
+.drag-list { display: flex; flex-direction: column; gap: 8px; }
+.drag-item { display: flex; align-items: center; gap: 8px; border-radius: 16px; transition: transform .15s, box-shadow .15s; }
+.drag-item .pref { margin: 0; }
+.drag-item.dragging { transform: scale(1.03); box-shadow: 0 12px 30px rgb(0 0 0 / .4); opacity: .9; }
+.drag-item.over { box-shadow: inset 0 3px 0 var(--accent); }
+.drag-handle { touch-action: none; cursor: grab; font-size: 1.4rem; color: var(--muted); padding: 10px 6px; user-select: none; }
+.pref.grow { flex: 1; }
+.icon-btn.on { color: var(--accent); }

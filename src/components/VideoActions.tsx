@@ -4,6 +4,7 @@ import { Icon } from './Icon'
 import { getLiked, getWatchLater, toggleBlock, toggleLike, toggleWatchLater, type StoredVideo } from '../lib/storage'
 import { download, listQualities } from '../lib/download'
 import { isNative } from '../lib/nativeFetch'
+import { shareVideo } from '../lib/share'
 
 /** Choix de la qualité puis téléchargement avec progression. */
 export function DownloadSheet({ video, open, onClose }: { video: StoredVideo; open: boolean; onClose: () => void }) {
@@ -72,6 +73,9 @@ export function VideoMenu({ video, open, onClose }: { video: StoredVideo; open: 
           </button>
           <button onClick={() => (onClose(), setDl(true))}>
             <Icon name="download" /> Télécharger
+          </button>
+          <button onClick={act(() => shareVideo(video.id, video.title))}>
+            <Icon name="share" /> Partager…
           </button>
           <button onClick={act(() => navigator.clipboard?.writeText(`https://youtu.be/${video.id}`))}>
             <Icon name="link" /> Copier le lien

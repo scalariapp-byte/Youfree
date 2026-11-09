@@ -153,7 +153,7 @@ export function Layout({ children }: { children: ReactNode }) {
   const { pathname } = useLocation()
   const immersive = pathname.startsWith('/shorts')
   const { tabs } = useSettings()
-  const nav = NAV.filter((n) => (showShorts || n.to !== '/shorts') && (n.to === '/' || tabs.includes(n.to)))
+  const nav = [NAV[0], ...tabs.map((t) => NAV.find((n) => n.to === t)).filter((n): n is (typeof NAV)[number] => !!n && n.to !== '/')].filter((n) => showShorts || n.to !== '/shorts')
 
   useEffect(() => setSearching(false), [pathname])
   // Onglet choisi au démarrage.

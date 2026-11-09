@@ -7,15 +7,17 @@ import { Icon } from '../components/Icon'
 import { ErrorBox } from '../components/ErrorBox'
 import { useAsync } from '../lib/useAsync'
 import { useAllSubs } from '../lib/useSubs'
-import { toggleLocalSub, useSettings, useBlocked } from '../lib/storage'
+import { saveSettings, toggleLocalSub, useSettings, useBlocked } from '../lib/storage'
+import { askPermission } from '../lib/notify'
 import { getSubscriptionFeed, splitShorts } from '../lib/youtube'
 
 export function Subscriptions() {
-  const { all, google, loading } = useAllSubs()
+  const { all, loading } = useAllSubs()
   const settings = useSettings()
   const blocked = useBlocked()
   const [tab, setTab] = useState<'feed' | 'channels' | 'find'>('feed')
   const [force, setForce] = useState(0)
+  const [filterQ, setFilterQ] = useState('')
   const key = all.map((c) => c.id).join(',')
   const feed = useAsync(() => (all.length ? getSubscriptionFeed(all, force > 0) : Promise.resolve([])), [key, force, blocked.length])
 
@@ -57,25 +59,41 @@ export function Subscriptions() {
       {tab === 'find' ? (
         <ChannelFinder />
       ) : tab === 'channels' ? (
-        <div className="channels">
-          {all.map((c) => {
-            const fromGoogle = google.some((g) => g.id === c.id)
-            return (
-              <div key={c.id} className="channel-row">
-                <Link to={`/channel/${c.id}`}>
-                  <Avatar src={c.thumbnail} name={c.title} size={40} />
-                  <span>{c.title}</span>
-                </Link>
-                {fromGoogle ? (
-                  <small className="muted">Compte Google</small>
-                ) : (
-                  <button className="btn ghost" onClick={() => toggleLocalSub(c)}>
-                    Se désabonner
-                  </button>
-                )}
-              </div>
-            )
-          })}
+        <div>
+          <div className="music-search">
+            <Icon name="search" size={18} />
+            <input value={filterQ} onChange={(e) => setFilterQ(e.target.value)} placeholder={`Filtrer mes ${all.length} chaînes`} />
+          </div>
+          <div className="channels">
+            {all
+              .filter((c) => c.title.toLowerCase().includes(filterQ.toLowerCase()))
+              .map((c) => {
+                const bell = settings.notifyChannels.includes(c.id)
+                return (
+                  <div key={c.id} className="channel-row">
+                    <Link to={`/channel/${c.id}`}>
+                      <Avatar src={c.thumbnail} name={c.title} size={40} />
+                      <span>{c.title}</span>
+                    </Link>
+                    <div className="row-btns tight">
+                      <button
+                        className={`icon-btn small ${bell ? 'on' : ''}`}
+                        aria-label="Notifications"
+                        onClick={async () => {
+                          if (!bell) await askPermission()
+                          saveSettings({ notifyChannels: bell ? settings.notifyChannels.filter((x) => x !== c.id) : [...settings.notifyChannels, c.id] })
+                        }}
+                      >
+                        <Icon name="bell" size={18} fill={bell} />
+                      </button>
+                      <button className="btn ghost small" onClick={() => confirm(`Se désabonner de ${c.title} ?`) && toggleLocalSub(c)}>
+                        Se désabonner
+                      </button>
+                    </div>
+                  </div>
+                )
+              })}
+          </div>
         </div>
       ) : feed.error ? (
         <ErrorBox error={feed.error} />

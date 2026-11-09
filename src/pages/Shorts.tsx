@@ -110,7 +110,18 @@ export function Shorts() {
   const [q, setQ] = useState('')
   const [grid, setGrid] = useState(false)
   const blocked = useBlocked()
-  const load = (token?: string) => (q ? search(q, token, 'shorts') : getShorts(cat, token))
+  const { interests } = useSettings()
+  // Sans recherche : Shorts tirés de tes centres d'intérêt (3 thèmes au hasard, puis un nouveau à chaque page).
+  const pick = () => interests[Math.floor(Math.random() * interests.length)]
+  const load = async (token?: string) => {
+    if (q) return search(q, token, 'shorts')
+    if (!interests.length) return getShorts(cat, token)
+    const keys = token ? [pick()] : [pick(), pick(), pick()]
+    const lists = await Promise.all(keys.map((k) => getShorts(k).then((r) => r.videos, () => [] as Video[])))
+    const out: Video[] = []
+    for (let i = 0; i < 20; i++) for (const l of lists) if (l[i]) out.push(l[i])
+    return { videos: out, next: 'more' }
+  }
   const [items, setItems] = useState<Video[]>([])
   const [next, setNext] = useState<string | undefined>()
   const [error, setError] = useState<Error | null>(null)

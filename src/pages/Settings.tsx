@@ -10,6 +10,7 @@ import { ago } from '../lib/format'
 import { Sheet } from '../components/Sheet'
 import { Icon } from '../components/Icon'
 import { InterestPicker } from '../components/InterestPicker'
+import { DragList } from '../components/DragList'
 
 const REGIONS = ['FR', 'BE', 'CH', 'CA', 'LU', 'MA', 'DZ', 'TN', 'SN', 'US', 'GB', 'DE', 'ES', 'IT', 'PT', 'BR', 'MX']
 
@@ -142,6 +143,13 @@ function Choice<T extends string | number>({ value, set, options }: { value: T; 
   )
 }
 
+const TAB_LIST: [string, string][] = [
+  ['/shorts', 'Shorts'],
+  ['/music', 'Musique'],
+  ['/subscriptions', 'Abonnements'],
+  ['/library', 'Bibliothèque'],
+]
+
 const SECTION_LABELS: Record<string, string> = { continue: 'Reprendre', shorts: 'Shorts', subs: 'Nouveautés des abonnements', popular: 'Pour toi / Populaire' }
 
 type Pane = 'notifs' | 'interests' | 'content' | 'home' | 'look' | 'play' | 'music' | 'cloud' | 'data' | 'help' | null
@@ -173,11 +181,6 @@ export function Settings() {
     e.target.value = ''
   }
   const order = s.homeOrder.filter((k) => SECTION_LABELS[k])
-  const move = (i: number, d: number) => {
-    const o = [...order]
-    ;[o[i], o[i + d]] = [o[i + d], o[i]]
-    saveSettings({ homeOrder: o })
-  }
 
   const MENU: [Pane, string, string, string][] = [
     ['notifs', 'bell', 'Notifications', `${s.notifyChannels.length} chaîne(s)`],
@@ -270,38 +273,38 @@ export function Settings() {
 
           {pane === 'home' && (
             <>
-              <label>Sections et ordre</label>
-              {order.map((k, i) => (
-                <div key={k} className="pref">
-                  <span>
-                    <strong>{SECTION_LABELS[k]}</strong>
-                  </span>
-                  <div className="row-btns tight">
-                    <button className="icon-btn small" disabled={i === 0} onClick={() => move(i, -1)} aria-label="Monter">
-                      ↑
-                    </button>
-                    <button className="icon-btn small" disabled={i === order.length - 1} onClick={() => move(i, 1)} aria-label="Descendre">
-                      ↓
-                    </button>
+              <label>Sections de l’accueil (glisser ⠿ pour réordonner)</label>
+              <DragList
+                items={order}
+                keyOf={(k) => k}
+                onChange={(o) => saveSettings({ homeOrder: o })}
+                render={(k) => (
+                  <div className="pref grow">
+                    <span>
+                      <strong>{SECTION_LABELS[k]}</strong>
+                    </span>
                     <button
                       className={`switch ${s.sections[k as keyof typeof s.sections] ? 'on' : ''}`}
                       onClick={() => saveSettings({ sections: { ...s.sections, [k]: !s.sections[k as keyof typeof s.sections] } })}
                       aria-label={SECTION_LABELS[k]}
                     />
                   </div>
-                </div>
-              ))}
-              <label>Onglets visibles</label>
-              {(
-                [
-                  ['/shorts', 'Shorts'],
-                  ['/music', 'Musique'],
-                  ['/subscriptions', 'Abonnements'],
-                  ['/library', 'Bibliothèque'],
-                ] as const
-              ).map(([t, l]) => (
-                <Toggle key={t} on={s.tabs.includes(t)} label={l} set={(v) => saveSettings({ tabs: v ? [...s.tabs, t] : s.tabs.filter((x) => x !== t) })} />
-              ))}
+                )}
+              />
+              <label>Onglets (glisser pour réordonner, interrupteur pour afficher)</label>
+              <DragList
+                items={TAB_LIST.map((t) => t[0]).sort((x, y) => (s.tabs.indexOf(x) + 99 * +!s.tabs.includes(x)) - (s.tabs.indexOf(y) + 99 * +!s.tabs.includes(y)))}
+                keyOf={(t) => t}
+                onChange={(l) => saveSettings({ tabs: l.filter((t) => s.tabs.includes(t)) })}
+                render={(t) => (
+                  <div className="pref grow">
+                    <span>
+                      <strong>{TAB_LIST.find((x) => x[0] === t)?.[1]}</strong>
+                    </span>
+                    <button className={`switch ${s.tabs.includes(t) ? 'on' : ''}`} onClick={() => saveSettings({ tabs: s.tabs.includes(t) ? s.tabs.filter((x) => x !== t) : [...s.tabs, t] })} aria-label="Afficher" />
+                  </div>
+                )}
+              />
               <label>Onglet au démarrage</label>
               <Choice value={s.startTab} set={(v) => saveSettings({ startTab: v })} options={[['/', 'Accueil'], ['/shorts', 'Shorts'], ['/music', 'Musique'], ['/subscriptions', 'Abonnements']]} />
               <label>Taille des vignettes</label>
