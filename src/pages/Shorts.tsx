@@ -95,6 +95,7 @@ export function Shorts() {
   const startId = params.get('v')
   const cat: string | undefined = undefined
   const [q, setQ] = useState('')
+  const [grid, setGrid] = useState(false)
   const blocked = useBlocked()
   const load = (token?: string) => (q ? search(q, token, 'shorts') : getShorts(cat, token))
   const [items, setItems] = useState<Video[]>([])
@@ -176,11 +177,17 @@ export function Shorts() {
         <button className="icon-btn" onClick={() => (history.length > 1 ? nav(-1) : nav('/'))} aria-label="Retour">
           <Icon name="back" />
         </button>
-        <form className="shorts-search" onSubmit={(e) => (e.preventDefault(), setQ((e.currentTarget.elements[0] as HTMLInputElement).value.trim()))}>
+        <form className="shorts-search" onSubmit={(e) => {
+            e.preventDefault()
+            const v = (e.currentTarget.elements[0] as HTMLInputElement).value.trim()
+            setQ(v)
+            setGrid(!!v)
+            ;(e.currentTarget.elements[0] as HTMLInputElement).blur()
+          }}>
           <Icon name="search" size={18} />
           <input key={q} defaultValue={q} placeholder="Rechercher des Shorts" enterKeyHint="search" />
           {q && (
-            <button type="button" onClick={() => setQ('')} aria-label="Effacer">
+            <button type="button" onClick={() => (setQ(''), setGrid(false))} aria-label="Effacer">
               <Icon name="close" size={16} />
             </button>
           )}
@@ -191,12 +198,36 @@ export function Shorts() {
           <ErrorBox error={error} />
         </div>
       ) : (
+        grid ? (
+          <div className="shorts-results">
+            {items.length === 0 && <span className="spinner" />}
+            {applyFilters(items).map((v, i, list) => (
+              <button
+                key={v.id}
+                className="short-card"
+                onClick={() => {
+                  setItems([...list.slice(i), ...list.slice(0, i)])
+                  setActive(v.id)
+                  setGrid(false)
+                  feed.current?.scrollTo({ top: 0 })
+                }}
+              >
+                <img src={v.thumbnail} alt="" loading="lazy" onError={(e) => (e.currentTarget.src = `https://i.ytimg.com/vi/${v.id}/hqdefault.jpg`)} />
+                <span className="short-info">
+                  <span className="short-title">{decode(v.title)}</span>
+                  {v.views > 0 && <small>{compact(v.views)} vues</small>}
+                </span>
+              </button>
+            ))}
+          </div>
+        ) : (
         <div className="shorts-feed" ref={feed}>
           {items.length === 0 && <div className="short-slide loading">Chargement…</div>}
           {applyFilters(items).map((v, i, list) => (
             <ShortSlide key={v.id} v={v} active={v.id === active} near={list[i - 1]?.id === active} />
           ))}
         </div>
+        )
       )}
     </div>
   )

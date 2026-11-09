@@ -680,9 +680,7 @@ body { background: var(--bg); }
 .immersive .music-bar { display: none; }
 
 /* ============ Écran fixe : aucun défilement horizontal ============ */
-html, body { overflow-x: hidden; max-width: 100%; }
-.app, .content { overflow-x: clip; }
-body { touch-action: pan-y; }
+.app { overflow-x: clip; }
 
 /* ============ Shorts : page fixée, barre de recherche et boutons toujours au premier plan ============ */
 .shorts-page { position: fixed; inset: 0 0 0 var(--side); height: auto; z-index: 30; }
@@ -692,3 +690,5 @@ body { touch-action: pan-y; }
 @media (max-width: 860px) {
   .shorts-page { left: 0; bottom: calc(var(--tab) + 20px + env(safe-area-inset-bottom)); height: auto; }
 }
+.shorts-results { position: absolute; inset: 0; overflow-y: auto; padding: 64px 10px 16px; display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; align-content: start; background: #000; }
+.shorts-results .short-card { border: 0; padding: 0; }

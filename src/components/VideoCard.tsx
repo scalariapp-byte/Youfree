@@ -28,10 +28,16 @@ interface Props {
 }
 
 /** Au toucher : on précharge les infos et les flux pour une ouverture instantanée. */
+let warmTimer: number | undefined
 export function warm(id: string) {
-  prefetch(`v:${id}`, async () => (await getVideos([id]))[0])
-  if (canUseLocal()) getStreams(id).catch(() => {})
+  clearTimeout(warmTimer)
+  // Appui maintenu 120 ms sans glisser = intention d'ouvrir ; un défilement annule.
+  warmTimer = window.setTimeout(() => {
+    prefetch(`v:${id}`, async () => (await getVideos([id]))[0])
+    if (canUseLocal()) getStreams(id).catch(() => {})
+  }, 120)
 }
+const cancelWarm = () => clearTimeout(warmTimer)
 
 export const VideoCard = memo(function VideoCard({ video, progress, subtitle, onRemove }: Props) {
   const [menu, setMenu] = useState(false)
@@ -42,7 +48,7 @@ export const VideoCard = memo(function VideoCard({ video, progress, subtitle, on
     [full && full.views ? `${compact(full.views)} vues` : '', full?.publishedAt ? ago(full.publishedAt) : ''].filter(Boolean).join(' · ')
 
   return (
-    <article className="card" onPointerDown={() => warm(video.id)}>
+    <article className="card" onPointerDown={() => warm(video.id)} onPointerMove={cancelWarm} onPointerCancel={cancelWarm}>
       <Link to={`/watch/${video.id}${progress ? `?t=${Math.floor(progress)}` : ''}`} className="thumb" viewTransition>
         <Thumb id={video.id} fallback={video.thumbnail} />
         {full?.live ? <span className="badge live">EN DIRECT</span> : video.durationSec > 0 && <span className="badge">{duration(video.durationSec)}</span>}
