@@ -1,6 +1,6 @@
 // Vérifie à l'ouverture si un APK plus récent est publié, et annonce la mise à jour installée.
 import { useEffect, useState } from 'react'
-import { isNative } from '../lib/nativeFetch'
+import { isNative, localFetch } from '../lib/nativeFetch'
 
 const BUILD = Number(import.meta.env.VITE_BUILD ?? 0)
 const RELEASE_API = 'https://api.github.com/repos/scalariapp-byte/Youtmusic/releases/tags/android-latest'
@@ -21,14 +21,22 @@ export function UpdateBanner() {
       /* ignore */
     }
     if (!isNative()) return
-    fetch(RELEASE_API)
-      .then((r) => r.json())
-      .then((rel) => {
-        const m = String(rel.body ?? '').match(/build\s+(\d+)/i)
-        const notes = String(rel.body ?? '').split(/\n/).find((l) => l.startsWith('Nouveautés')) ?? ''
-        if (m && Number(m[1]) > BUILD) setLatest({ build: Number(m[1]), notes: notes.replace(/^Nouveautés\s*:\s*/, '') })
-      })
-      .catch(() => {})
+    // Vérifie au lancement, à chaque retour dans l'appli et toutes les 30 min (requête native).
+    const check = () =>
+      localFetch(`${RELEASE_API}?t=${Date.now()}`, { headers: { Accept: 'application/vnd.github+json' } })
+        .then((r) => r.text())
+        .then((txt) => {
+          const rel = JSON.parse(txt)
+          const m = String(rel.body ?? '').match(/build\s+(\d+)/i)
+          const notes = String(rel.body ?? '').split(/\n/).find((l) => l.startsWith('Nouveautés')) ?? ''
+          if (m && Number(m[1]) > BUILD) (setLatest({ build: Number(m[1]), notes: notes.replace(/^Nouveautés\s*:\s*/, '') }), setHidden(false))
+        })
+        .catch(() => {})
+    check()
+    const onVis = () => !document.hidden && check()
+    document.addEventListener('visibilitychange', onVis)
+    const t = setInterval(check, 30 * 60_000)
+    return () => (document.removeEventListener('visibilitychange', onVis), clearInterval(t))
   }, [])
 
   if (hidden) return null

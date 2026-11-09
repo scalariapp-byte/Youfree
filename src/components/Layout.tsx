@@ -216,10 +216,12 @@ export function Layout({ children }: { children: ReactNode }) {
       </nav>
 
       <main className="content">
-        {!immersive && <UpdateBanner />}
         {children}
       </main>
 
+      <div className="update-float">
+        <UpdateBanner />
+      </div>
       <MusicBar />
       <ShareSheet />
       <nav className="tabbar">

@@ -812,3 +812,7 @@ body { background: var(--bg); }
 .settings-group .settings-menu { gap: 0; border: 1px solid var(--border); border-radius: 18px; overflow: hidden; background: color-mix(in srgb, var(--surface) 85%, transparent); }
 .settings-group .settings-menu > button { border: 0; border-radius: 0; background: none; }
 .settings-group .settings-menu > button + button { border-top: 1px solid var(--border); }
+.update-float { position: fixed; z-index: 60; left: 10px; right: 10px; top: calc(var(--top) + 8px); pointer-events: none; }
+.update-float .update-banner { pointer-events: auto; margin: 0; box-shadow: 0 10px 30px rgb(0 0 0 / .45); backdrop-filter: blur(14px); }
+@media (min-width: 861px) { .update-float { left: calc(var(--side) + 20px); right: 20px; } }
+.immersive .update-float { top: 62px; }
