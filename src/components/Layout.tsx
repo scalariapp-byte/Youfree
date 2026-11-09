@@ -4,6 +4,7 @@ import { useAuth } from '../lib/auth'
 import { useAllSubs } from '../lib/useSubs'
 import { useSettings } from '../lib/storage'
 import { Icon } from './Icon'
+import { UpdateBanner } from './UpdateBanner'
 import { suggest } from '../lib/youtube'
 
 export function Logo({ compact = false }: { compact?: boolean }) {
@@ -217,7 +218,10 @@ export function Layout({ children }: { children: ReactNode }) {
         )}
       </nav>
 
-      <main className="content">{children}</main>
+      <main className="content">
+        <UpdateBanner />
+        {children}
+      </main>
 
       <nav className="tabbar">
         {nav.map((n) => (

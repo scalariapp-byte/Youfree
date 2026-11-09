@@ -131,7 +131,12 @@ export const isShortVideo = (v: Video) =>
 export function splitShorts(list: Video[]) {
   const videos: Video[] = []
   const shorts: Video[] = []
-  list.forEach((v) => (isShortVideo(v) ? shorts : videos).push(v))
+  const seen = new Set<string>()
+  list.forEach((v) => {
+    if (seen.has(v.id)) return
+    seen.add(v.id)
+    ;(isShortVideo(v) ? shorts : videos).push(v)
+  })
   return { videos, shorts }
 }
 

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { VideoCard, VideoGrid, Skeletons, ShortsShelf } from '../components/VideoCard'
 import { ErrorBox } from '../components/ErrorBox'
+import { Infinite } from '../components/Infinite'
 import { useAsync } from '../lib/useAsync'
 import { useSettings } from '../lib/storage'
 import { search, splitShorts, type SearchFilter, type Video } from '../lib/youtube'
@@ -54,11 +55,7 @@ export function Search() {
               <VideoCard key={v.id} video={v} />
             ))}
           </VideoGrid>
-          {next && (
-            <button className="btn ghost more" onClick={more}>
-              Afficher plus
-            </button>
-          )}
+          <Infinite hasMore={!!next} onMore={more} />
         </>
       )}
     </div>

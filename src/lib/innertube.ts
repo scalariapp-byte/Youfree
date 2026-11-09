@@ -209,7 +209,7 @@ const THEME_QUERIES: Record<string, string> = {
 }
 
 export async function trending(categoryId?: string, pageToken?: string) {
-  if (pageToken) {
+  if (pageToken && continuations.has(pageToken)) {
     const r = await resume(pageToken)
     return { videos: toVideos(r.videos), next: remember(r) }
   }
@@ -228,12 +228,12 @@ export async function search(q: string, pageToken?: string, filter = '') {
   if (filter === 'long') f.duration = 'over_twenty_mins'
   if (filter === 'today' || filter === 'week' || filter === 'month') f.upload_date = filter
   if (filter === 'popular') f.prioritize = 'popularity'
-  const r = pageToken ? await resume(pageToken) : await (await yt()).search(q, f)
+  const r = pageToken && continuations.has(pageToken) ? await resume(pageToken) : await (await yt()).search(q, f)
   return { videos: toVideos(r.videos), next: remember(r) }
 }
 
 export async function shorts(q: string, pageToken?: string) {
-  const r = pageToken ? await resume(pageToken) : await (await yt()).search(q, { type: 'shorts' })
+  const r = pageToken && continuations.has(pageToken) ? await resume(pageToken) : await (await yt()).search(q, { type: 'shorts' })
   // On ne garde que de vrais formats courts (la recherche peut mêler des vidéos classiques).
   const videos = toVideos(r.videos)
     .filter((v) => v.isShort || (v.durationSec > 0 && v.durationSec <= 180))
@@ -305,7 +305,7 @@ export async function channel(id: string): Promise<Channel> {
 
 /** Vidéos d'une chaîne (onglet « Vidéos » : les Shorts n'y figurent pas) ou d'une playlist. */
 export async function playlistVideos(playlistId: string, _max = 30, pageToken?: string) {
-  if (pageToken) {
+  if (pageToken && continuations.has(pageToken)) {
     const r = await resume(pageToken)
     return { videos: toVideos(r.videos), next: remember(r) }
   }

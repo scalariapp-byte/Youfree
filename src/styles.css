@@ -409,3 +409,26 @@ button.pill:hover { background: var(--surface-3); }
 .card, .short-card, .chip, .btn, .tabbar a { touch-action: manipulation; }
 .content > .page { animation: fade .18s ease-out; }
 @keyframes fade { from { opacity: 0; transform: translateY(4px); } }
+
+/* ============ Mise à jour, scroll infini, finitions ============ */
+.update-banner {
+  display: flex; align-items: center; gap: 12px; margin-bottom: 18px; padding: 12px 14px; border-radius: 16px;
+  background: linear-gradient(120deg, color-mix(in srgb, var(--accent) 22%, var(--surface)), var(--surface));
+  border: 1px solid color-mix(in srgb, var(--accent) 40%, var(--border)); animation: fade .3s ease-out;
+}
+.update-banner > div { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.update-banner small { color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.update-banner.ok { cursor: pointer; }
+.infinite { display: grid; place-items: center; padding: 28px 0 8px; }
+.spinner { width: 28px; height: 28px; border-radius: 50%; border: 3px solid var(--surface-3); border-top-color: var(--accent); animation: spin .8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.version { text-align: center; font-size: .8rem; margin-top: 24px; }
+.logo span { background: linear-gradient(90deg, var(--text) 40%, var(--accent)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.thumb { box-shadow: 0 0 0 1px color-mix(in srgb, var(--border) 50%, transparent); }
+@media (hover: hover) {
+  .card .thumb { transition: transform .2s ease, box-shadow .2s ease; }
+  .card:hover .thumb { transform: translateY(-2px); box-shadow: 0 12px 28px rgb(0 0 0 / .35); }
+}
+.card:active .thumb { transform: scale(.98); }
+.section-head h2 { font-size: 1.2rem; font-weight: 750; }
+.chip.on { box-shadow: 0 4px 14px color-mix(in srgb, var(--text) 18%, transparent); }

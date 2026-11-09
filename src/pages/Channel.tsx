@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom'
 import { VideoCard, VideoGrid, Skeletons, ShortCard } from '../components/VideoCard'
 import { Avatar } from '../components/Layout'
 import { ErrorBox } from '../components/ErrorBox'
+import { Infinite } from '../components/Infinite'
 import { useAsync } from '../lib/useAsync'
 import { applyFilters, getChannel, getChannelShorts, getPlaylistVideos, splitShorts, type Video } from '../lib/youtube'
 import { compact } from '../lib/format'
@@ -92,11 +93,7 @@ export function Channel() {
               <VideoCard key={v.id} video={{ ...v, channelAvatar: v.channelAvatar ?? c?.thumbnail }} />
             ))}
           </VideoGrid>
-          {next && (
-            <button className="btn ghost more" onClick={more}>
-              Afficher plus
-            </button>
-          )}
+          <Infinite hasMore={!!next} onMore={more} />
         </>
       )}
     </div>

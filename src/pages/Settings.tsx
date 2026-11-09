@@ -195,6 +195,7 @@ export function Settings() {
           </label>
         </div>
       </section>
+      <p className="muted version">Youfree · version {import.meta.env.VITE_BUILD ?? 'dev'}</p>
       {msg && <p className="toast">{msg}</p>}
     </div>
   )

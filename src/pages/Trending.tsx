@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { VideoCard, VideoGrid, Skeletons, ShortsShelf } from '../components/VideoCard'
 import { ErrorBox } from '../components/ErrorBox'
+import { Infinite } from '../components/Infinite'
 import { ThemeChips } from '../components/Themes'
 import { useAsync } from '../lib/useAsync'
 import { useSettings } from '../lib/storage'
@@ -38,11 +39,7 @@ export function Trending() {
               <VideoCard key={v.id} video={v} />
             ))}
           </VideoGrid>
-          {next && (
-            <button className="btn ghost more" onClick={more}>
-              Afficher plus
-            </button>
-          )}
+          <Infinite hasMore={!!next} onMore={more} />
         </>
       )}
     </div>
