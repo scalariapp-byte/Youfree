@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { getSettings, useSettings, updatePosition, saveSettings } from '../lib/storage'
 import { Icon } from './Icon'
-import { clearNowPlaying, setNowPlaying } from '../lib/background'
+import { clearNowPlaying, nowPlayingOwner, setNowPlaying } from '../lib/background'
 import { pauseMusic } from '../lib/music'
 import { canUseLocal } from '../lib/nativeFetch'
 import { getStreams, type Streams } from '../lib/stream'
@@ -112,10 +112,12 @@ function DirectPlayer({ id, start, onEnded, onFail, loop, bare, paused, title = 
     // Notification et contrôles système (sauf Shorts) ; la musique se met en pause.
     const media = () => (document.hidden ? audio : video)
     const announce = () =>
-      setNowPlaying({ title: title || (bare ? 'Short' : 'Youtmusic'), artist, artwork: `https://i.ytimg.com/vi/${id}/hqdefault.jpg` }, !media().paused, { toggle: () => (media().paused ? media().play() : media().pause()) })
+      setNowPlaying({ title: title || (bare ? 'Short' : 'Youtmusic'), artist, artwork: `https://i.ytimg.com/vi/${id}/hqdefault.jpg` }, !media().paused, { toggle: () => (media().paused ? media().play() : media().pause()) }, video)
     const onPlay = () => (pauseMusic(), announce())
     video.addEventListener('play', onPlay)
-    video.addEventListener('pause', announce)
+    // Une pause ne met à jour la notification que si ce lecteur en est le propriétaire.
+    const onPause = () => nowPlayingOwner() === video && announce()
+    video.addEventListener('pause', onPause)
     const on: [string, () => void][] = [
       ['play', () => (sync(), audio.play().catch(() => {}))],
       ['pause', () => !document.hidden && audio.pause()],
@@ -137,8 +139,8 @@ function DirectPlayer({ id, start, onEnded, onFail, loop, bare, paused, title = 
       on.forEach(([e, f]) => video.removeEventListener(e, f))
       document.removeEventListener('visibilitychange', onVis)
       video.removeEventListener('play', onPlay)
-      video.removeEventListener('pause', announce)
-      clearNowPlaying()
+      video.removeEventListener('pause', onPause)
+      clearNowPlaying(video)
       clearInterval(timer)
       clearInterval(fast)
       if (video.currentTime > 5) updatePosition(id, video.currentTime)

@@ -11,11 +11,13 @@ const Bg = registerPlugin<BgPlugin>('BackgroundPlayback')
 
 type Handlers = { toggle: () => void; next?: () => void; prev?: () => void }
 let handlers: Handlers | null = null
+let owner: unknown = null
 if (isNative()) Bg.addListener('action', ({ action }) => handlers?.[action as keyof Handlers]?.())
 
 /** Annonce le média en cours (notification + écran verrouillé). */
-export function setNowPlaying(meta: { title: string; artist: string; artwork?: string }, playing: boolean, h: Handlers) {
+export function setNowPlaying(meta: { title: string; artist: string; artwork?: string }, playing: boolean, h: Handlers, who: unknown = null) {
   handlers = h
+  owner = who
   if (isNative()) Bg.update({ title: meta.title, text: meta.artist, playing }).catch(() => {})
   if ('mediaSession' in navigator) {
     navigator.mediaSession.metadata = new MediaMetadata({ title: meta.title, artist: meta.artist, artwork: meta.artwork ? [{ src: meta.artwork }] : [] })
@@ -27,7 +29,12 @@ export function setNowPlaying(meta: { title: string; artist: string; artwork?: s
   }
 }
 
-export function clearNowPlaying() {
+export const nowPlayingOwner = () => owner
+
+/** N'arrête le service que si c'est ce lecteur qui l'a lancé en dernier. */
+export function clearNowPlaying(who: unknown = null) {
+  if (who !== null && who !== owner) return
+  owner = null
   handlers = null
   if (isNative()) Bg.stop().catch(() => {})
 }

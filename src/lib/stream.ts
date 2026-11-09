@@ -81,6 +81,7 @@ export function getStreams(id: string): Promise<Streams> {
     const p = fetchStreams(id)
     cache.set(id, p)
     p.catch(() => cache.delete(id))
+    if (cache.size > 80) cache.delete(cache.keys().next().value!)
     setTimeout(() => cache.delete(id), 4 * 3600_000)
   }
   return cache.get(id)!

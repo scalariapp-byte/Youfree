@@ -34,6 +34,17 @@ export function audioBlobUrl(url: string, mime: string): Promise<string> {
     })()
     cache.set(url, p)
     p.catch(() => cache.delete(url))
+    // Mémoire bornée : on ne garde que les 6 pistes les plus récentes (les autres sont libérées).
+    while (cache.size > 6) {
+      const [oldUrl, old] = cache.entries().next().value!
+      cache.delete(oldUrl)
+      old.then((u) => setTimeout(() => URL.revokeObjectURL(u), 60_000), () => {})
+    }
+  } else {
+    // Rafraîchit l'ordre (la piste redevient la plus récente).
+    const p = cache.get(url)!
+    cache.delete(url)
+    cache.set(url, p)
   }
   return cache.get(url)!
 }
