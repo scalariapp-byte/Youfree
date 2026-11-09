@@ -26,6 +26,11 @@ export interface Settings {
   audioQuality: 'high' | 'low'
   tabs: string[]
   notifyChannels: string[]
+  captions: boolean
+  translateTitles: boolean
+  shortsButtons: { like: boolean; details: boolean; download: boolean; more: boolean }
+  shortsSide: 'right' | 'left'
+  background: 'halo' | 'plain' | 'gradient' | 'aurora' | 'sunset'
   player: 'direct' | 'nocookie' | 'invidious'
   invidiousInstance: string
 }
@@ -75,6 +80,11 @@ const DEFAULT_SETTINGS: Settings = {
   audioQuality: 'high',
   tabs: ['/', '/shorts', '/music', '/subscriptions', '/library'],
   notifyChannels: [],
+  captions: false,
+  translateTitles: true,
+  shortsButtons: { like: true, details: true, download: true, more: true },
+  shortsSide: 'right',
+  background: 'halo',
   player: 'direct',
   invidiousInstance: 'https://yewtu.be',
 }

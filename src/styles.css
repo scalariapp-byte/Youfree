@@ -778,3 +778,14 @@ body { background: var(--bg); }
 .artist-bio.open { max-height: none; }
 .artist-link { color: var(--accent) !important; }
 .now-playing > p a { color: var(--accent); }
+/* Page vidéo : rien ne dépasse à droite */
+.watch-main { min-width: 0; }
+@media (max-width: 860px) { .watch-actions { width: auto; max-width: calc(100vw - 32px); } .watch-title, .desc { overflow-wrap: anywhere; } }
+/* Fonds au choix */
+:root[data-bg='plain'] body::before { display: none; }
+:root[data-bg='gradient'] body::before { background: linear-gradient(160deg, color-mix(in srgb, var(--accent) 28%, transparent), transparent 55%), linear-gradient(340deg, color-mix(in srgb, var(--accent-2) 20%, transparent), transparent 50%); }
+:root[data-bg='aurora'] body::before { background: radial-gradient(80% 50% at 20% 10%, #22d3ee33, transparent 60%), radial-gradient(70% 45% at 80% 20%, #a855f733, transparent 60%), radial-gradient(90% 50% at 50% 100%, #10b98133, transparent 60%); }
+:root[data-bg='sunset'] body::before { background: radial-gradient(100% 55% at 50% 0%, #f9731633, transparent 60%), radial-gradient(80% 50% at 100% 100%, #ec489933, transparent 60%); }
+/* Boutons des Shorts à gauche */
+.short-overlay.left { flex-direction: row-reverse; }
+.short-overlay.left .short-text { text-align: right; }

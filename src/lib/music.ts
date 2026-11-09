@@ -2,6 +2,7 @@
 import { useSyncExternalStore } from 'react'
 import type { Track } from './innertube'
 import { getStreams } from './stream'
+import { audioBlobUrl } from './blobAudio'
 import { getSettings } from './storage'
 import { clearNowPlaying, setNowPlaying } from './background'
 
@@ -42,10 +43,23 @@ async function load(i: number) {
       .map((f) => f.url)
     cands.push(...s.formats.filter((f) => f.audio && f.video).map((f) => f.url))
     let ok = false
-    for (const url of cands) {
-      if (await tryPlay(url)) {
-        ok = true
-        break
+    const blob = localStorage.getItem('youfree:audioBlob') === '1'
+    if (!blob)
+      for (const url of cands.slice(0, 2)) {
+        if (await tryPlay(url)) {
+          ok = true
+          break
+        }
+      }
+    // Le téléphone refuse les URL audio directes : téléchargement natif puis lecture en mémoire.
+    if (!ok) {
+      const f = s.formats.filter((x) => x.audio && !x.video).sort((x, y) => (/mp4/.test(y.mime) ? 1 : 0) - (/mp4/.test(x.mime) ? 1 : 0) || Math.abs(x.bitrate - 130000) - Math.abs(y.bitrate - 130000))[0]
+      if (f) {
+        const u = await audioBlobUrl(f.url, f.mime).catch(() => '')
+        if (u && queue[index]?.id === t.id && (await tryPlay(u))) {
+          ok = true
+          localStorage.setItem('youfree:audioBlob', '1')
+        }
       }
     }
     if (!ok) throw new Error(cands.length ? `${cands.length} pistes audio refusées (${audio.error?.message || 'code ' + (audio.error?.code ?? '?')})` : 'aucune piste audio')

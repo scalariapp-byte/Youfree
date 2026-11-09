@@ -8,8 +8,14 @@ import { canUseLocal } from '../lib/nativeFetch'
 import { compact, duration, ago, decode } from '../lib/format'
 import type { StoredVideo } from '../lib/storage'
 import { Empty } from './ErrorBox'
+import { useTr } from '../lib/titleTr'
 import { Avatar } from './Layout'
 import { Icon } from './Icon'
+
+/** Titre traduit automatiquement si besoin. */
+export function Tr({ text, music }: { text: string; music?: boolean }) {
+  return <>{useTr(text, music)}</>
+}
 
 export const toStored = (v: Video): StoredVideo => ({
   id: v.id,
@@ -64,7 +70,7 @@ export const VideoCard = memo(function VideoCard({ video, progress, subtitle, on
         </Link>
         <div className="card-body">
           <Link to={`/watch/${video.id}`} className="card-title" title={decode(video.title)}>
-            {decode(video.title)}
+            <Tr text={decode(video.title)} />
           </Link>
           <div className="card-meta">
             <Link to={`/channel/${video.channelId}`}>{video.channelTitle}</Link>
@@ -139,7 +145,9 @@ export function ShortCard({ video, list }: { video: Video; list?: Video[] }) {
     <Link to={`/shorts?v=${video.id}`} state={{ list }} className="short-card">
       <img src={video.thumbnail} alt="" loading="lazy" onError={(e) => ((e.currentTarget.src = `https://i.ytimg.com/vi/${video.id}/hqdefault.jpg`))} />
       <span className="short-info">
-        <span className="short-title">{decode(video.title)}</span>
+        <span className="short-title">
+          <Tr text={decode(video.title)} />
+        </span>
         {video.views > 0 && <small>{compact(video.views)} vues</small>}
       </span>
     </Link>

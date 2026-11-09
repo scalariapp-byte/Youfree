@@ -18,3 +18,15 @@ createRoot(document.getElementById('root')!).render(
     <App />
   </StrictMode>,
 )
+
+// Geste / bouton retour : ferme la fenêtre ouverte, sinon page précédente, sinon met l'appli en arrière-plan (ne la quitte pas).
+import('@capacitor/app').then(({ App: CapApp }) =>
+  CapApp.addListener('backButton', () => {
+    const sheet = document.querySelector<HTMLElement>('.sheet-back')
+    if (sheet) return sheet.click()
+    const np = document.querySelector<HTMLElement>('.np-close')
+    if (np) return np.click()
+    if (location.hash && location.hash !== '#/' && history.length > 1) history.back()
+    else CapApp.minimizeApp()
+  }),
+).catch(() => {})

@@ -1,3 +1,6 @@
+import { useEffect, useState } from 'react'
+import { getStreams } from '../lib/stream'
+import { canUseLocal } from '../lib/nativeFetch'
 // Accueil : thèmes en haut, puis Reprendre, Shorts, Nouveautés des abonnements, Populaire.
 // Pas d'algorithme opaque, pas de jeux.
 import { Link } from 'react-router-dom'
@@ -32,10 +35,17 @@ function ContinueWatching() {
 
 /** « Pour toi » : vidéos populaires de chaque centre d'intérêt, entremêlées. */
 // Rotation quotidienne parmi les centres d'intérêt (5 par jour), pour varier sans tout charger.
+// Tirage aléatoire à chaque ouverture de l'accueil : le contenu change à chaque visite.
+let seed = Math.random()
+const rnd = (i: number) => ((Math.sin(seed * 9973 + i * 7919) + 1) * 10000) % 1
 function pickToday(interests: string[], n: number) {
-  const day = Math.floor(Date.now() / 86400000)
-  return [...interests].sort((a, b) => ((a.charCodeAt(0) * 31 + a.length * day) % 97) - ((b.charCodeAt(0) * 31 + b.length * day) % 97)).slice(0, n)
+  return interests
+    .map((k, i) => [k, rnd(i)] as const)
+    .sort((a, b) => a[1] - b[1])
+    .slice(0, n)
+    .map(([k]) => k)
 }
+const shuffle = <T,>(l: T[]) => l.map((v, i) => [v, rnd(i + 100)] as const).sort((a, b) => a[1] - b[1]).map(([v]) => v)
 async function forYou(interests: string[]) {
   const lists = await Promise.all(pickToday(interests, 5).map((c) => getTrending(c).then((r) => r.videos, () => [])))
   const out = []
@@ -44,6 +54,8 @@ async function forYou(interests: string[]) {
 }
 
 export function Home() {
+  // Nouveau tirage à chaque arrivée sur l'accueil.
+  useState(() => (seed = Math.random()))
   const settings = useSettings()
   const blocked = useBlocked()
   const { all, loading } = useAllSubs()
@@ -58,9 +70,24 @@ export function Home() {
   if (!isAvailable()) return <Onboarding />
 
   const subs = splitShorts(feed.data ?? [])
-  const pop = splitShorts(onlyLang(popular.data?.videos ?? [], settings.lang))
+  // Pendant le chargement du nouveau tirage, on montre le précédent (mélangé) : affichage immédiat.
+  const last = (() => {
+    try {
+      return JSON.parse(localStorage.getItem('youfree:homeLast') || '[]')
+    } catch {
+      return []
+    }
+  })()
+  if (popular.data?.videos?.length) localStorage.setItem('youfree:homeLast', JSON.stringify(popular.data.videos.slice(0, 40)))
+  const pop = splitShorts(shuffle(onlyLang(popular.data?.videos ?? last, settings.lang)))
   const shelf = settings.showShorts ? onlyLang([...subs.shorts, ...pop.shorts, ...(shorts.data?.videos ?? [])], settings.lang).filter((v, i, a) => a.findIndex((x) => x.id === v.id) === i) : []
 
+  const first = pop.videos.slice(0, 4).map((v) => v.id).join(',')
+  useEffect(() => {
+    if (!first || !canUseLocal()) return
+    const t = setTimeout(() => first.split(',').forEach((id) => getStreams(id).catch(() => {})), 1200)
+    return () => clearTimeout(t)
+  }, [first])
   const blocks: Record<string, React.ReactNode> = {
     continue: !cat && settings.sections.continue && <ContinueWatching key="c" />,
     shorts: settings.sections.shorts && shelf.length > 0 && <ShortsShelf key="s" shorts={shelf} />,
@@ -84,7 +111,7 @@ export function Home() {
           <h2>{cat ? 'Populaire dans ce thème' : mix ? 'Pour toi' : 'Populaire en ce moment'}</h2>
           <Link to="/trending">Explorer</Link>
         </div>
-        {popular.error ? <ErrorBox error={popular.error} /> : !popular.data ? <Skeletons n={8} /> : (
+        {popular.error && !pop.videos.length ? <ErrorBox error={popular.error} /> : !pop.videos.length ? <Skeletons n={8} /> : (
           <VideoGrid>
             {pop.videos.map((v) => (
               <VideoCard key={v.id} video={v} />

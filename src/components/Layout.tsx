@@ -22,14 +22,15 @@ export function Logo({ compact = false }: { compact?: boolean }) {
 
 /** Applique le thème choisi (sombre par défaut) sur <html>. */
 export function useTheme() {
-  const { theme, accent, density, textScale, animations, radius, tabLabels } = useSettings()
+  const { theme, accent, density, textScale, animations, radius, tabLabels, background } = useSettings()
   useEffect(() => {
     const d = document.documentElement
     d.style.fontSize = `${textScale}%`
     d.dataset.anim = animations ? 'on' : 'off'
     d.dataset.radius = radius
     d.dataset.labels = tabLabels ? 'on' : 'off'
-  }, [textScale, animations, radius, tabLabels])
+    d.dataset.bg = background
+  }, [textScale, animations, radius, tabLabels, background])
   useEffect(() => {
     const st = document.documentElement.style
     st.setProperty('--accent', accent)

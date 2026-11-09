@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { Player } from '../components/Player'
-import { VideoCard, toStored } from '../components/VideoCard'
+import { VideoCard, toStored, Tr } from '../components/VideoCard'
+import { useTr } from '../lib/titleTr'
 import { ErrorBox } from '../components/ErrorBox'
 import { useAsync } from '../lib/useAsync'
 import { getChannel, getComments, getPlaylistVideos, getVideos } from '../lib/youtube'
@@ -77,6 +78,7 @@ export function Watch() {
     setShowDesc(false)
   }, [id])
 
+  const descTr = useTr(v?.description ?? '')
   if (video.error) return <div className="page"><ErrorBox error={video.error} /></div>
 
   const ch = channel.data
@@ -90,7 +92,9 @@ export function Watch() {
         <Player key={`${id}-${tParam ?? ''}`} id={id} start={start} title={v ? decode(v.title) : ''} artist={v?.channelTitle} onEnded={() => autoplay && next && nav(`/watch/${next.id}`)} />
         {v && (
           <>
-            <h1 className="watch-title">{decode(v.title)}</h1>
+            <h1 className="watch-title">
+              <Tr text={decode(v.title)} />
+            </h1>
             <div className="watch-bar">
               <Link to={`/channel/${v.channelId}`} className="watch-channel">
                 <Avatar src={ch?.thumbnail} name={v.channelTitle} size={40} />
@@ -135,7 +139,7 @@ export function Watch() {
                 {compact(v.views)} vues · {ago(v.publishedAt)}
               </strong>
               <p>
-                <Linkified text={v.description} />
+                <Linkified text={descTr} />
               </p>
               {showDesc ? (
                 <button className="link" onClick={(e) => (e.stopPropagation(), setShowDesc(false))}>

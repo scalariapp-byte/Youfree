@@ -251,6 +251,19 @@ export function Settings() {
                 ))}
               </select>
               <Toggle on={s.showShorts} set={(v) => saveSettings({ showShorts: v })} label="Shorts" hint="Onglet et rangées de Shorts" />
+              <label>Boutons des Shorts</label>
+              {(
+                [
+                  ['like', 'J’aime'],
+                  ['details', 'Détails et commentaires'],
+                  ['download', 'Télécharger'],
+                  ['more', 'Plus'],
+                ] as const
+              ).map(([k, l]) => (
+                <Toggle key={k} on={s.shortsButtons[k]} label={l} set={(v) => saveSettings({ shortsButtons: { ...s.shortsButtons, [k]: v } })} />
+              ))}
+              <label>Côté des boutons</label>
+              <Choice value={s.shortsSide} set={(v) => saveSettings({ shortsSide: v })} options={[['right', 'Droite'], ['left', 'Gauche']]} />
               <BlockedSection />
             </>
           )}
@@ -308,6 +321,12 @@ export function Settings() {
               </div>
               <label>Taille du texte</label>
               <Choice value={s.textScale} set={(v) => saveSettings({ textScale: v })} options={[[90, 'Petit'], [100, 'Normal'], [110, 'Grand'], [120, 'Très grand']]} />
+              <label>Fond</label>
+              <Choice
+                value={s.background}
+                set={(v) => saveSettings({ background: v })}
+                options={[['halo', 'Halos'], ['aurora', 'Aurore'], ['gradient', 'Dégradé'], ['sunset', 'Coucher de soleil'], ['plain', 'Uni']]}
+              />
               <label>Coins</label>
               <Choice value={s.radius} set={(v) => saveSettings({ radius: v })} options={[['round', 'Arrondis'], ['square', 'Droits']]} />
               <Toggle on={s.animations} set={(v) => saveSettings({ animations: v })} label="Animations" />
@@ -332,6 +351,8 @@ export function Settings() {
               <label>Image</label>
               <Choice value={s.fit} set={(v) => saveSettings({ fit: v })} options={[['contain', 'Ajuster'], ['cover', 'Remplir']]} />
               <Toggle on={s.autoNext} set={(v) => saveSettings({ autoNext: v })} label="Enchaîner la vidéo suivante" />
+              <Toggle on={s.captions} set={(v) => saveSettings({ captions: v })} label="Sous-titres" hint="Lecteur YouTube intégré" />
+              <Toggle on={s.translateTitles} set={(v) => saveSettings({ translateTitles: v })} label="Traduire titres et descriptions" hint="Sauf titres de musique et textes déjà dans ta langue" />
               <Toggle on={s.showStats} set={(v) => saveSettings({ showStats: v })} label="Statistiques de lecture" hint="Affiche ce qui ralentit le démarrage" />
             </>
           )}

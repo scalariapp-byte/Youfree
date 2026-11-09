@@ -1,12 +1,13 @@
 // Lecteur : embed youtube-nocookie (via l'API IFrame, pour reprendre la lecture)
 // ou une instance Invidious (aucune publicité, mais dépend d'un serveur tiers).
 import { useEffect, useRef, useState } from 'react'
-import { useSettings, updatePosition, saveSettings } from '../lib/storage'
+import { getSettings, useSettings, updatePosition, saveSettings } from '../lib/storage'
 import { Icon } from './Icon'
 import { clearNowPlaying, setNowPlaying } from '../lib/background'
 import { pauseMusic } from '../lib/music'
 import { canUseLocal } from '../lib/nativeFetch'
 import { getStreams, type Streams } from '../lib/stream'
+import { audioBlobUrl } from '../lib/blobAudio'
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 declare global {
@@ -36,6 +37,7 @@ function DirectPlayer({ id, start, onEnded, onFail, loop, bare, paused, title = 
   const [s, setS] = useState<Streams | null>(null)
   const [src, setSrc] = useState('')
   const [panel, setPanel] = useState(false)
+  const [audioSrc, setAudioSrc] = useState('')
   const [stats, setStats] = useState(settings.showStats)
   const mountAt = useRef(performance.now())
   const [marks, setMarks] = useState<Record<string, number>>({})
@@ -65,6 +67,11 @@ function DirectPlayer({ id, start, onEnded, onFail, loop, bare, paused, title = 
         if (r.hls && low && !bare) r = { ...r, audio: undefined, qualities: [], video: r.hls }
         mark('flux')
         setS(r)
+        if (r.audio) {
+          const fmt = r.formats.find((f) => f.url === r.audio)
+          if (localStorage.getItem('youfree:audioBlob') === '1' && fmt) audioBlobUrl(fmt.url, fmt.mime).then((u) => ok && setAudioSrc(u), () => ok && setAudioSrc(r.audio!))
+          else setAudioSrc(r.audio)
+        }
         setSrc((r.qualities.find((q) => q.height <= settings.quality) ?? r.qualities[r.qualities.length - 1])?.url ?? r.video)
       },
       (e) => ok && onFail((e as Error).message),
@@ -124,7 +131,7 @@ function DirectPlayer({ id, start, onEnded, onFail, loop, bare, paused, title = 
       clearInterval(timer)
       if (video.currentTime > 5) updatePosition(id, video.currentTime)
     }
-  }, [s, src, id, start, bare, title, artist])
+  }, [s, src, audioSrc, id, start, bare, title, artist])
   if (!s) return <div className="player loading-player" />
   return (
     <div className="player">
@@ -144,7 +151,21 @@ function DirectPlayer({ id, start, onEnded, onFail, loop, bare, paused, title = 
         onEnded={() => (updatePosition(id, 0), onEnded?.())}
         onError={() => onFail('lecture refusée par le serveur vidéo')}
       />
-      {s.audio && <audio ref={a} src={s.audio} preload="auto" onError={() => onFail('piste audio refusée')} />}
+      {s.audio && audioSrc && (
+        <audio
+          ref={a}
+          src={audioSrc}
+          preload="auto"
+          onCanPlay={() => mark('son')}
+          onError={() => {
+            // URL directe refusée : on télécharge la piste par la couche native.
+            const fmt = s.formats.find((f) => f.url === s.audio)
+            if (!fmt || audioSrc.startsWith('blob:')) return onFail('piste audio refusée')
+            localStorage.setItem('youfree:audioBlob', '1')
+            audioBlobUrl(fmt.url, fmt.mime).then(setAudioSrc, () => onFail('piste audio refusée'))
+          }}
+        />
+      )}
       {!bare && (
         <button className="player-gear" onClick={() => setPanel(!panel)} aria-label="Réglages de lecture">
           <Icon name="settings" size={20} />
@@ -261,7 +282,7 @@ function EmbedPlayer({ id, start = 0, onEnded }: { id: string; start?: number; o
     // YouTube refuse la lecture (erreur 153), ce qui arrive dans certaines WebViews.
     const iframe = document.createElement('iframe')
     const origin = encodeURIComponent(location.origin)
-    iframe.src = `https://www.youtube-nocookie.com/embed/${id}?enablejsapi=1&autoplay=1&start=${Math.floor(start)}&rel=0&playsinline=1&iv_load_policy=3&origin=${origin}`
+    iframe.src = `https://www.youtube-nocookie.com/embed/${id}?enablejsapi=1&autoplay=1&start=${Math.floor(start)}&rel=0&playsinline=1&iv_load_policy=3&cc_load_policy=${getSettings().captions ? 1 : 0}&cc_lang_pref=${getSettings().lang}&origin=${origin}`
     iframe.allow = 'autoplay; fullscreen; picture-in-picture; encrypted-media'
     iframe.allowFullscreen = true
     iframe.referrerPolicy = 'strict-origin-when-cross-origin'
@@ -272,6 +293,7 @@ function EmbedPlayer({ id, start = 0, onEnded }: { id: string; start?: number; o
       if (cancelled) return
       player = new YT.Player(iframe, {
         events: {
+          onReady: () => !getSettings().captions && player.unloadModule?.('captions'),
           onStateChange: (e: any) => {
             if (e.data === YT.PlayerState.ENDED) {
               updatePosition(id, 0)

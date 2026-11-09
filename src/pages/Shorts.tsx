@@ -6,18 +6,19 @@ import { ErrorBox } from '../components/ErrorBox'
 import { Icon } from '../components/Icon'
 import { decode, compact, ago } from '../lib/format'
 import { Comments } from '../components/Comments'
-import { toggleLike, useLiked, useBlocked } from '../lib/storage'
+import { toggleLike, useLiked, useBlocked, useSettings } from '../lib/storage'
 import { applyFilters, getComments, getShorts, getVideos, search, type Video } from '../lib/youtube'
 import { useAsync } from '../lib/useAsync'
 import { Sheet } from '../components/Sheet'
 import { VideoMenu, DownloadSheet } from '../components/VideoActions'
-import { toStored } from '../components/VideoCard'
+import { toStored, Tr } from '../components/VideoCard'
 import { Player } from '../components/Player'
 import { getStreams } from '../lib/stream'
 import { canUseLocal } from '../lib/nativeFetch'
 
 function ShortSlide({ v, active, near }: { v: Video; active: boolean; near: boolean }) {
   const liked = useLiked().some((x) => x.id === v.id)
+  const { shortsButtons: sb, shortsSide } = useSettings()
   const [sheet, setSheet] = useState<'' | 'info' | 'menu' | 'dl'>('')
   const info = useAsync(() => (sheet === 'info' ? Promise.all([getVideos([v.id]).then((r) => r[0]), getComments(v.id)]) : Promise.resolve(undefined)), [sheet, v.id])
   const st = toStored(v)
@@ -30,32 +31,40 @@ function ShortSlide({ v, active, near }: { v: Video; active: boolean; near: bool
           <img src={v.thumbnail} alt="" loading="lazy" onError={(e) => (e.currentTarget.src = `https://i.ytimg.com/vi/${v.id}/hqdefault.jpg`)} />
         )}
       </div>
-      <div className="short-overlay">
+      <div className={`short-overlay ${shortsSide === 'left' ? 'left' : ''}`}>
         <div className="short-text">
           {v.channelTitle && (
             <Link to={`/channel/${v.channelId}`} className="short-channel">
               @{v.channelTitle}
             </Link>
           )}
-          <p onClick={() => setSheet('info')}>{decode(v.title)}</p>
+          <p onClick={() => setSheet('info')}>
+            <Tr text={decode(v.title)} />
+          </p>
         </div>
         <div className="short-actions">
-          <button className={liked ? 'on' : ''} onClick={() => toggleLike(st)}>
+          {sb.like && <button className={liked ? 'on' : ''} onClick={() => toggleLike(st)}>
             <Icon name="like" size={26} fill={liked} />
             <span>{v.views ? compact(v.views) : 'J’aime'}</span>
-          </button>
-          <button onClick={() => setSheet('info')}>
-            <Icon name="comment" size={26} />
-            <span>Détails</span>
-          </button>
-          <button onClick={() => setSheet('dl')}>
-            <Icon name="download" size={26} />
-            <span>Télécharger</span>
-          </button>
-          <button onClick={() => setSheet('menu')}>
-            <Icon name="dots" size={26} />
-            <span>Plus</span>
-          </button>
+          </button>}
+          {sb.details && (
+            <button onClick={() => setSheet('info')}>
+              <Icon name="comment" size={26} />
+              <span>Détails</span>
+            </button>
+          )}
+          {sb.download && (
+            <button onClick={() => setSheet('dl')}>
+              <Icon name="download" size={26} />
+              <span>Télécharger</span>
+            </button>
+          )}
+          {sb.more && (
+            <button onClick={() => setSheet('menu')}>
+              <Icon name="dots" size={26} />
+              <span>Plus</span>
+            </button>
+          )}
         </div>
       </div>
       <Sheet open={sheet === 'info'} onClose={() => setSheet('')} title="Détails">
@@ -76,7 +85,11 @@ function ShortSlide({ v, active, near }: { v: Video; active: boolean; near: bool
               {info.data[0]?.publishedAt && <span>{ago(info.data[0].publishedAt)}</span>}
               {(info.data[0]?.channelTitle || v.channelTitle) && <span>@{info.data[0]?.channelTitle || v.channelTitle}</span>}
             </div>
-            {info.data[0]?.description && <p className="desc-text">{info.data[0].description}</p>}
+            {info.data[0]?.description && (
+              <p className="desc-text">
+                <Tr text={info.data[0].description} />
+              </p>
+            )}
             <h4>Commentaires</h4>
             <Comments list={info.data[1]} />
           </div>
@@ -214,7 +227,9 @@ export function Shorts() {
               >
                 <img src={v.thumbnail} alt="" loading="lazy" onError={(e) => (e.currentTarget.src = `https://i.ytimg.com/vi/${v.id}/hqdefault.jpg`)} />
                 <span className="short-info">
-                  <span className="short-title">{decode(v.title)}</span>
+                  <span className="short-title">
+                    <Tr text={decode(v.title)} />
+                  </span>
                   {v.views > 0 && <small>{compact(v.views)} vues</small>}
                 </span>
               </button>
