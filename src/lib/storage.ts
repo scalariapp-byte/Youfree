@@ -8,6 +8,7 @@ export interface Settings {
   hideShorts: boolean
   hideGaming: boolean
   player: 'nocookie' | 'invidious'
+  source: 'auto' | 'api' | 'local'
   invidiousInstance: string
 }
 
@@ -38,6 +39,7 @@ const DEFAULT_SETTINGS: Settings = {
   hideShorts: true,
   hideGaming: false,
   player: 'nocookie',
+  source: 'auto',
   invidiousInstance: 'https://yewtu.be',
 }
 

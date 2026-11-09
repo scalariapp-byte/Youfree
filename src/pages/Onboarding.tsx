@@ -2,6 +2,8 @@ import { Link } from 'react-router-dom'
 import { useAuth } from '../lib/auth'
 import { Logo } from '../components/Layout'
 
+const APK_URL = 'https://github.com/scalariapp-byte/Youfree/releases/tag/android-latest'
+
 export function Onboarding() {
   const { available, signIn, error } = useAuth()
   return (
@@ -29,8 +31,15 @@ export function Onboarding() {
           {error && <p className="muted">{error}</p>}
         </div>
         <div className="choice">
-          <h3>Sans compte</h3>
-          <p>Abonne-toi aux chaînes localement, rien n’est envoyé à Google à ton nom.</p>
+          <h3>Sans compte, sans clé</h3>
+          <p>Installe l’application Android : le téléphone interroge YouTube directement, sans clé ni quota.</p>
+          <a className="btn" href={APK_URL} target="_blank" rel="noreferrer">
+            Télécharger l’APK
+          </a>
+        </div>
+        <div className="choice">
+          <h3>Sans compte, avec clé API</h3>
+          <p>Dans le navigateur, une clé API YouTube gratuite est nécessaire. Abonnements gardés sur l’appareil.</p>
           <Link to="/settings" className="btn ghost">
             Ajouter une clé API
           </Link>

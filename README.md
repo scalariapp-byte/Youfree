@@ -1,6 +1,27 @@
 # Youfree
 
-Client web pour regarder YouTube **sans pubs dans le flux, sans jeux (Playables), sans Shorts imposés**, avec un accueil chronologique basé sur tes abonnements. Utilisable **avec ton compte Google** ou **sans compte**.
+Client pour regarder YouTube **sans pubs dans le flux, sans jeux (Playables), sans Shorts imposés**, avec un accueil chronologique basé sur tes abonnements. Utilisable **avec ton compte Google** ou **sans compte**.
+
+## Deux façons de l'utiliser
+
+| | App Android (APK) | Site web |
+|---|---|---|
+| Clé API | **Aucune** : le téléphone interroge YouTube directement | Clé API gratuite obligatoire |
+| Quota | Aucun | 10 000 unités/jour |
+| Connexion Google | Non (Google bloque la connexion dans les WebViews) | Oui |
+| Serveur | Aucun | Aucun (hébergement statique) |
+
+**Télécharger l'APK** : [Releases → android-latest](https://github.com/scalariapp-byte/Youfree/releases/tag/android-latest) (construit automatiquement par GitHub Actions).
+
+### Comment marche le mode sans clé
+
+Le navigateur interdit à une page web d'interroger youtube.com (CORS). Dans l'app Android, les requêtes passent par la couche HTTP native du téléphone (Capacitor), qui n'a pas cette restriction. L'app parle à l'API interne de YouTube (InnerTube, via [youtubei.js](https://github.com/LuanRT/YouTube.js)), comme NewPipe ou FreeTube. Aucune donnée ne passe par un serveur tiers.
+
+Limites de ce mode :
+- il repose sur une API non documentée : si YouTube change son format, certaines pages peuvent casser jusqu'à une mise à jour de youtubei.js ;
+- YouTube a supprimé la page Tendances en 2025 : l'onglet « Tendances » affiche les vidéos les plus populaires de la semaine par thème (recherche) ;
+- dates approximatives (« il y a 3 jours ») et pas de nombre de « j'aime » dans les listes ;
+- utiliser l'API interne est contraire aux conditions d'utilisation de YouTube.
 
 ## Fonctionnalités
 
@@ -20,13 +41,25 @@ Client web pour regarder YouTube **sans pubs dans le flux, sans jeux (Playables)
 - **Quota API** : 10 000 unités/jour par clé. Une recherche coûte ~101 unités (≈ 95 recherches/jour), les tendances et le fil d'abonnements ~1 unité par chaîne. Le fil est mis en cache 15 min.
 - La connexion Google est en **lecture seule** : s'abonner depuis Youfree crée un abonnement local, pas sur ton compte YouTube.
 
-## Démarrer
+## Construire l'APK soi-même
+
+```bash
+npm install
+npm run build
+npx cap sync android
+cd android && ./gradlew assembleDebug   # nécessite JDK 21 + Android SDK
+# → android/app/build/outputs/apk/debug/app-debug.apk
+```
+
+## Démarrer (web)
 
 ```bash
 npm install
 cp .env.example .env   # optionnel : tu peux aussi saisir les clés dans Réglages
 npm run dev
 ```
+
+En `npm run dev`, le mode sans clé fonctionne aussi sur ordinateur grâce au proxy de développement de Vite (`/__yt`). Ce proxy n'existe pas sur le site publié.
 
 ### Obtenir les identifiants (gratuit)
 
@@ -43,4 +76,4 @@ npm run dev
 
 ## Stack
 
-React 19, React Router (HashRouter, compatible hébergement statique), Vite, TypeScript. Aucun serveur : tout tourne dans le navigateur, les données personnelles restent en `localStorage`.
+React 19, React Router (HashRouter), Vite, TypeScript, Capacitor (Android), youtubei.js. Aucun serveur : tout tourne sur l'appareil, les données personnelles restent en `localStorage`.

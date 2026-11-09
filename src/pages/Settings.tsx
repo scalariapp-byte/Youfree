@@ -1,6 +1,7 @@
 import { useState, type ChangeEvent } from 'react'
 import { useAuth } from '../lib/auth'
 import { exportAll, importAll, importLocalSubs, saveSettings, useLocalSubs, useSettings } from '../lib/storage'
+import { canUseLocal, isNative } from '../lib/nativeFetch'
 
 const REGIONS = ['FR', 'BE', 'CH', 'CA', 'LU', 'MA', 'SN', 'US', 'GB', 'DE', 'ES', 'IT']
 
@@ -52,6 +53,29 @@ export function Settings() {
   return (
     <div className="page settings">
       <h1>Réglages</h1>
+
+      <section>
+        <h2>Source des vidéos</h2>
+        <label className="toggle">
+          <input type="radio" name="source" checked={s.source === 'auto'} onChange={() => saveSettings({ source: 'auto' })} />
+          Automatique (clé API ou compte Google si disponible, sinon sans clé)
+        </label>
+        <label className="toggle">
+          <input type="radio" name="source" checked={s.source === 'local'} disabled={!canUseLocal()} onChange={() => saveSettings({ source: 'local' })} />
+          Sans clé : le téléphone interroge YouTube directement (gratuit, sans quota)
+        </label>
+        <label className="toggle">
+          <input type="radio" name="source" checked={s.source === 'api'} onChange={() => saveSettings({ source: 'api' })} />
+          API officielle YouTube (clé API ou compte Google)
+        </label>
+        <p className="muted">
+          {isNative()
+            ? 'Mode sans clé disponible dans cette application.'
+            : canUseLocal()
+              ? 'Mode sans clé disponible (serveur de développement).'
+              : 'Mode sans clé indisponible dans un navigateur : le navigateur bloque les requêtes vers youtube.com. Installe l’application Android.'}
+        </p>
+      </section>
 
       <section>
         <h2>Accès à YouTube</h2>

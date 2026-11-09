@@ -2,6 +2,8 @@
 import { accessToken } from './auth'
 import { apiKey } from './config'
 import { getSettings, type LocalChannel } from './storage'
+import { canUseLocal } from './nativeFetch'
+const loadLocal = () => import('./innertube')
 
 const BASE = 'https://www.googleapis.com/youtube/v3/'
 
@@ -46,7 +48,20 @@ export class ApiError extends Error {
   }
 }
 
-export const hasCredentials = () => !!(apiKey() || accessToken())
+/**
+ * Source des données :
+ * - « api »   : API officielle (clé API ou compte Google), avec quota.
+ * - « local » : le téléphone interroge YouTube directement, sans clé (app Android uniquement).
+ * - « auto »  : API si une clé ou un compte est disponible, sinon local si possible.
+ */
+export function useLocal() {
+  const { source } = getSettings()
+  if (source === 'local') return canUseLocal()
+  if (source === 'api') return false
+  return !apiKey() && !accessToken() && canUseLocal()
+}
+
+export const hasCredentials = () => !!(apiKey() || accessToken()) || useLocal()
 
 async function call<T = any>(path: string, params: Record<string, string | number | undefined>, needAuth = false): Promise<T> {
   const url = new URL(BASE + path)
@@ -114,6 +129,7 @@ export function applyFilters(videos: Video[]): Video[] {
 
 /** Détails complets de vidéos (50 max par appel, 1 unité de quota). */
 export async function getVideos(ids: string[]): Promise<Video[]> {
+  if (useLocal()) return (async () => { const l = await loadLocal(); return Promise.all(ids.map((id) => l.video(id))) })()
   const out: Video[] = []
   for (let i = 0; i < ids.length; i += 50) {
     const chunk = ids.slice(i, i + 50)
@@ -125,6 +141,10 @@ export async function getVideos(ids: string[]): Promise<Video[]> {
 }
 
 export async function getTrending(categoryId?: string, pageToken?: string) {
+  if (useLocal()) {
+    const r = await (await loadLocal()).trending(categoryId, pageToken)
+    return { videos: applyFilters(r.videos), next: r.next }
+  }
   const data = await call('videos', {
     part: 'snippet,contentDetails,statistics',
     chart: 'mostPopular',
@@ -138,6 +158,10 @@ export async function getTrending(categoryId?: string, pageToken?: string) {
 
 /** Recherche (100 unités de quota) + détails (1 unité). */
 export async function search(q: string, pageToken?: string) {
+  if (useLocal()) {
+    const r = await (await loadLocal()).search(q, pageToken)
+    return { videos: applyFilters(r.videos), next: r.next }
+  }
   const data = await call('search', {
     part: 'snippet',
     type: 'video',
@@ -153,6 +177,7 @@ export async function search(q: string, pageToken?: string) {
 }
 
 export async function getChannel(id: string): Promise<Channel> {
+  if (useLocal()) return (await loadLocal()).channel(id)
   const data = await call('channels', { part: 'snippet,statistics,contentDetails,brandingSettings', id })
   const c = data.items?.[0]
   if (!c) throw new ApiError('Chaîne introuvable', 'other')
@@ -172,6 +197,7 @@ export async function getChannel(id: string): Promise<Channel> {
 export const uploadsOf = (channelId: string) => 'UU' + channelId.slice(2)
 
 export async function getPlaylistVideos(playlistId: string, max = 24, pageToken?: string) {
+  if (useLocal()) return (await loadLocal()).playlistVideos(playlistId, max, pageToken)
   const data = await call('playlistItems', { part: 'contentDetails', playlistId, maxResults: Math.min(max, 50), pageToken })
   const ids = data.items.map((i: any) => i.contentDetails.videoId)
   const videos = ids.length ? await getVideos(ids) : []
@@ -179,6 +205,7 @@ export async function getPlaylistVideos(playlistId: string, max = 24, pageToken?
 }
 
 export async function getComments(videoId: string): Promise<Comment[]> {
+  if (useLocal()) return (await loadLocal()).comments(videoId)
   try {
     const data = await call('commentThreads', { part: 'snippet', videoId, maxResults: 30, order: 'relevance', textFormat: 'plainText' })
     return data.items.map((t: any) => {
@@ -261,7 +288,7 @@ async function pool<T, R>(items: T[], size: number, fn: (t: T) => Promise<R>): P
  * et les trie par date de publication. Mis en cache 15 min.
  */
 export async function getSubscriptionFeed(channels: LocalChannel[], force = false): Promise<Video[]> {
-  const key = channels.map((c) => c.id).sort().join(',')
+  const key = (useLocal() ? 'local:' : 'api:') + channels.map((c) => c.id).sort().join(',')
   if (!force) {
     try {
       const cached = JSON.parse(sessionStorage.getItem(FEED_CACHE) || 'null')
@@ -269,6 +296,15 @@ export async function getSubscriptionFeed(channels: LocalChannel[], force = fals
     } catch {
       /* ignore */
     }
+  }
+  if (useLocal()) {
+    const videos = await (await loadLocal()).subscriptionFeed(channels)
+    try {
+      sessionStorage.setItem(FEED_CACHE, JSON.stringify({ key, at: Date.now(), videos }))
+    } catch {
+      /* ignore */
+    }
+    return applyFilters(videos)
   }
   const lists = await pool(channels, 8, async (c) => {
     const data = await call('playlistItems', { part: 'contentDetails', playlistId: uploadsOf(c.id), maxResults: 6 })

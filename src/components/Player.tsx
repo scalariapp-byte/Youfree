@@ -39,12 +39,20 @@ export function Player({ id, start = 0, onEnded }: { id: string; start?: number;
     const mount = document.createElement('div')
     host.current.replaceChildren(mount)
 
+    // On crée l'iframe nous-mêmes pour fixer la politique de Referer : sans Referer,
+    // YouTube refuse la lecture (erreur 153), ce qui arrive dans certaines WebViews.
+    const iframe = document.createElement('iframe')
+    const origin = encodeURIComponent(location.origin)
+    iframe.src = `https://www.youtube-nocookie.com/embed/${id}?enablejsapi=1&autoplay=1&start=${Math.floor(start)}&rel=0&playsinline=1&iv_load_policy=3&origin=${origin}`
+    iframe.allow = 'autoplay; fullscreen; picture-in-picture; encrypted-media'
+    iframe.allowFullscreen = true
+    iframe.referrerPolicy = 'strict-origin-when-cross-origin'
+    iframe.title = 'Lecteur vidéo'
+    mount.replaceWith(iframe)
+
     loadYT().then((YT) => {
       if (cancelled) return
-      player = new YT.Player(mount, {
-        host: 'https://www.youtube-nocookie.com',
-        videoId: id,
-        playerVars: { autoplay: 1, start: Math.floor(start), rel: 0, modestbranding: 1, playsinline: 1, iv_load_policy: 3 },
+      player = new YT.Player(iframe, {
         events: {
           onStateChange: (e: any) => {
             if (e.data === YT.PlayerState.ENDED) {
