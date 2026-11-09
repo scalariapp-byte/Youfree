@@ -82,9 +82,9 @@ export function Welcome() {
             <h2>Qu’est-ce qui t’intéresse ?</h2>
             <p className="lead">Choisis-en quelques-uns : ton accueil sera composé avec.</p>
             <div className="interest-grid">
-              {THEMES.filter(([, id]) => id).map(([label, id], i) => (
-                <button key={id} style={{ ['--i' as string]: i }} className={`interest ${interests.includes(id!) ? 'on' : ''}`} onClick={() => toggle(id!)}>
-                  {interests.includes(id!) && <Icon name="check" size={16} />}
+              {THEMES.filter(([, id]) => id !== 'all').map(([label, id], i) => (
+                <button key={id} style={{ ['--i' as string]: Math.min(i, 12) }} className={`interest ${interests.includes(id) ? 'on' : ''}`} onClick={() => toggle(id)}>
+                  {interests.includes(id) && <Icon name="check" size={16} />}
                   {label}
                 </button>
               ))}

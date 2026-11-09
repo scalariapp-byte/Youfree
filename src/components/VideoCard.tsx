@@ -43,7 +43,7 @@ export const VideoCard = memo(function VideoCard({ video, progress, subtitle, on
 
   return (
     <article className="card" onPointerDown={() => warm(video.id)}>
-      <Link to={`/watch/${video.id}${progress ? `?t=${Math.floor(progress)}` : ''}`} className="thumb">
+      <Link to={`/watch/${video.id}${progress ? `?t=${Math.floor(progress)}` : ''}`} className="thumb" viewTransition>
         <Thumb id={video.id} fallback={video.thumbnail} />
         {full?.live ? <span className="badge live">EN DIRECT</span> : video.durationSec > 0 && <span className="badge">{duration(video.durationSec)}</span>}
         {pct > 0 && (

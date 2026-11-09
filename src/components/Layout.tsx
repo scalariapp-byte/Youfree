@@ -169,7 +169,7 @@ export function Layout({ children }: { children: ReactNode }) {
 
       <nav className="sidebar">
         {nav.map((n) => (
-          <NavLink key={n.to} to={n.to} end={n.end}>
+          <NavLink key={n.to} to={n.to} end={n.end} viewTransition>
             <Icon name={n.icon} /> <span>{n.label}</span>
           </NavLink>
         ))}
@@ -196,7 +196,7 @@ export function Layout({ children }: { children: ReactNode }) {
 
       <nav className="tabbar">
         {nav.map((n) => (
-          <NavLink key={n.to} to={n.to} end={n.end}>
+          <NavLink key={n.to} to={n.to} end={n.end} viewTransition>
             <Icon name={n.icon} size={24} />
             <span>{n.label}</span>
           </NavLink>

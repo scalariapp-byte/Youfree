@@ -4,6 +4,10 @@ import { useSyncExternalStore } from 'react'
 export interface Settings {
   region: string
   showShorts: boolean
+  speed: number
+  quality: number
+  fit: 'contain' | 'cover'
+  googleClientId: string
   lang: string
   interests: string[]
   onboarded: boolean
@@ -36,6 +40,10 @@ export interface LocalChannel {
 const DEFAULT_SETTINGS: Settings = {
   region: 'FR',
   showShorts: true,
+  speed: 1,
+  quality: 720,
+  fit: 'contain',
+  googleClientId: '',
   lang: 'fr',
   interests: [],
   onboarded: false,
@@ -139,9 +147,30 @@ export function exportAll() {
     2,
   )
 }
+/** Fusion sans perte (synchronisation) : historique le plus récent, listes réunies. */
+export function mergeAll(json: string) {
+  const d = JSON.parse(json)
+  const hist = new Map(getHistory().map((h) => [h.id, h]))
+  ;(d.history ?? []).forEach((h: HistoryEntry) => {
+    const cur = hist.get(h.id)
+    if (!cur || h.watchedAt > cur.watchedAt) hist.set(h.id, h)
+  })
+  write('history', [...hist.values()].sort((a, b) => b.watchedAt - a.watchedAt).slice(0, HISTORY_MAX))
+  const later = new Map(getWatchLater().map((v) => [v.id, v]))
+  ;(d.watchLater ?? []).forEach((v: StoredVideo) => later.has(v.id) || later.set(v.id, v))
+  write('watchLater', [...later.values()])
+  if (d.subs) importLocalSubs(d.subs)
+  if (d.settings) {
+    const { googleClientId: _g, ...rest } = d.settings
+    write('settings', { ...rest, ...read<Partial<Settings>>('settings', {}), onboarded: true })
+  }
+}
+
 export function importAll(json: string) {
   const data = JSON.parse(json)
   if (data.history) write('history', data.history)
   if (data.watchLater) write('watchLater', data.watchLater)
   if (data.subs) importLocalSubs(data.subs)
 }
+
+export const onStorageChange = subscribe

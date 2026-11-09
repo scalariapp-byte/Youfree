@@ -517,3 +517,33 @@ button.pill:hover { background: var(--surface-3); }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; animation-delay: 0ms !important; transition-duration: .01ms !important; }
 }
+
+/* ============ Réglages du lecteur ============ */
+.player-gear {
+  position: absolute; top: 10px; right: 10px; z-index: 3; display: grid; place-items: center; width: 38px; height: 38px;
+  border: 0; border-radius: 50%; background: rgb(0 0 0 / .55); color: #fff; backdrop-filter: blur(8px); transition: transform .3s;
+}
+.player-gear:active { transform: rotate(60deg) scale(.9); }
+.player-panel {
+  position: absolute; top: 56px; right: 10px; z-index: 4; width: min(320px, calc(100% - 20px)); max-height: calc(100% - 66px); overflow-y: auto;
+  padding: 14px; border-radius: 16px; background: rgb(18 20 24 / .92); color: #fff; backdrop-filter: blur(16px);
+  box-shadow: 0 16px 40px rgb(0 0 0 / .5); display: flex; flex-direction: column; gap: 12px; animation: panelIn .22s cubic-bezier(.2,.8,.2,1);
+}
+@keyframes panelIn { from { opacity: 0; transform: translateY(-8px) scale(.97); } }
+.player-panel label { display: flex; flex-direction: column; gap: 6px; font-size: .78rem; font-weight: 650; color: rgb(255 255 255 / .7); text-transform: uppercase; letter-spacing: .05em; }
+.player-panel .opts { display: flex; flex-wrap: wrap; gap: 6px; }
+.player-panel .opts button {
+  display: inline-flex; align-items: center; gap: 5px; height: 32px; padding: 0 11px; border: 0; border-radius: 9px;
+  background: rgb(255 255 255 / .1); color: #fff; font-size: .85rem; font-weight: 600; text-transform: none; letter-spacing: 0;
+}
+.player-panel .opts button.on { background: var(--accent); color: var(--accent-text); }
+
+/* ============ Sauvegarde Google ============ */
+.btn.google { background: #fff; color: #1f1f1f; border: 1px solid #dadce0; }
+.cloud-user { display: flex; align-items: center; gap: 12px; margin: 10px 0 14px; }
+.cloud-user img { width: 42px; height: 42px; border-radius: 50%; }
+.cloud-user small { display: block; color: var(--muted); }
+.cloud-err { color: var(--danger); font-size: .9rem; }
+
+/* ============ Transitions entre pages ============ */
+::view-transition-old(root), ::view-transition-new(root) { animation-duration: .22s; animation-timing-function: cubic-bezier(.2,.8,.2,1); }

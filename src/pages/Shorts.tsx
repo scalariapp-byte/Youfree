@@ -143,7 +143,7 @@ export function Shorts() {
           <Icon name="back" />
         </button>
         <div className="chips">
-          {THEMES.map(([label, id]) => (
+          {THEMES.map(([label, key]) => (key === 'all' ? [label, undefined] : [label, key]) as [string, string | undefined]).map(([label, id]) => (
             <button key={label} className={`chip ${cat === id ? 'on' : ''}`} onClick={() => setCat(id)}>
               {label}
             </button>

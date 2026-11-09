@@ -1,7 +1,8 @@
 // Lecteur : embed youtube-nocookie (via l'API IFrame, pour reprendre la lecture)
 // ou une instance Invidious (aucune publicité, mais dépend d'un serveur tiers).
 import { useEffect, useRef, useState } from 'react'
-import { useSettings, updatePosition } from '../lib/storage'
+import { useSettings, updatePosition, saveSettings } from '../lib/storage'
+import { Icon } from './Icon'
 import { canUseLocal } from '../lib/nativeFetch'
 import { getStreams, type Streams } from '../lib/stream'
 
@@ -29,13 +30,26 @@ function loadYT() {
 
 /** Lecteur natif sans pub : vidéo et audio séparés, synchronisés. */
 function DirectPlayer({ id, start, onEnded, onFail, loop }: { id: string; start: number; onEnded?: () => void; onFail: () => void; loop?: boolean }) {
+  const settings = useSettings()
   const [s, setS] = useState<Streams | null>(null)
   const [src, setSrc] = useState('')
+  const [panel, setPanel] = useState(false)
+  const [looping, setLooping] = useState(false)
+  const [sleep, setSleep] = useState(0)
+  // Minuterie de veille : met en pause après N minutes.
+  useEffect(() => {
+    if (!sleep) return
+    const t = setTimeout(() => (v.current?.pause(), setSleep(0)), sleep * 60_000)
+    return () => clearTimeout(t)
+  }, [sleep])
   const v = useRef<HTMLVideoElement>(null)
   const a = useRef<HTMLAudioElement>(null)
   useEffect(() => {
     let ok = true
-    getStreams(id).then((r) => ok && (setS(r), setSrc(r.video)), () => ok && onFail())
+    getStreams(id).then(
+      (r) => ok && (setS(r), setSrc((r.qualities.find((q) => q.height <= settings.quality) ?? r.qualities[r.qualities.length - 1])?.url ?? r.video)),
+      () => ok && onFail(),
+    )
     return () => {
       ok = false
     }
@@ -74,16 +88,76 @@ function DirectPlayer({ id, start, onEnded, onFail, loop }: { id: string; start:
   if (!s) return <div className="player loading-player" />
   return (
     <div className="player">
-      <video ref={v} src={src} autoPlay playsInline controls loop={loop} onEnded={() => (updatePosition(id, 0), onEnded?.())} onError={onFail} />
+      <video
+        ref={v}
+        src={src}
+        autoPlay
+        playsInline
+        controls
+        loop={loop || looping}
+        style={{ objectFit: settings.fit }}
+        onLoadedMetadata={(e) => (e.currentTarget.playbackRate = settings.speed)}
+        onEnded={() => (updatePosition(id, 0), onEnded?.())}
+        onError={onFail}
+      />
       {s.audio && <audio ref={a} src={s.audio} preload="auto" onError={onFail} />}
-      {s.qualities.length > 1 && (
-        <select className="quality" value={src} onChange={(e) => setSrc(e.target.value)} aria-label="Qualité">
-          {s.qualities.map((q) => (
-            <option key={q.url} value={q.url}>
-              {q.height}p
-            </option>
-          ))}
-        </select>
+      {!loop && (
+        <button className="player-gear" onClick={() => setPanel(!panel)} aria-label="Réglages de lecture">
+          <Icon name="settings" size={20} />
+        </button>
+      )}
+      {panel && (
+        <div className="player-panel" onClick={(e) => e.stopPropagation()}>
+          <label>
+            Vitesse
+            <div className="opts">
+              {[0.5, 0.75, 1, 1.25, 1.5, 1.75, 2].map((r) => (
+                <button key={r} className={settings.speed === r ? 'on' : ''} onClick={() => (saveSettings({ speed: r }), v.current && (v.current.playbackRate = r))}>
+                  {r}×
+                </button>
+              ))}
+            </div>
+          </label>
+          {s.qualities.length > 1 && (
+            <label>
+              Qualité
+              <div className="opts">
+                {s.qualities.map((q) => (
+                  <button key={q.url} className={src === q.url ? 'on' : ''} onClick={() => (setSrc(q.url), saveSettings({ quality: q.height }))}>
+                    {q.height}p
+                  </button>
+                ))}
+              </div>
+            </label>
+          )}
+          <label>
+            Image
+            <div className="opts">
+              <button className={settings.fit === 'contain' ? 'on' : ''} onClick={() => saveSettings({ fit: 'contain' })}>Ajuster</button>
+              <button className={settings.fit === 'cover' ? 'on' : ''} onClick={() => saveSettings({ fit: 'cover' })}>Remplir</button>
+            </div>
+          </label>
+          <label>
+            Minuterie
+            <div className="opts">
+              {[0, 15, 30, 60].map((m) => (
+                <button key={m} className={sleep === m ? 'on' : ''} onClick={() => setSleep(m)}>
+                  {m ? `${m} min` : 'Non'}
+                </button>
+              ))}
+            </div>
+          </label>
+          <div className="opts">
+            <button className={looping ? 'on' : ''} onClick={() => setLooping(!looping)}>
+              <Icon name="refresh" size={16} /> Boucle
+            </button>
+            {'pictureInPictureEnabled' in document && (
+              <button onClick={() => v.current?.requestPictureInPicture?.().catch(() => {})}>Mini-lecteur</button>
+            )}
+            <button onClick={() => v.current && (v.current.currentTime -= 10)}>−10 s</button>
+            <button onClick={() => v.current && (v.current.currentTime += 10)}>+10 s</button>
+          </div>
+        </div>
       )}
     </div>
   )

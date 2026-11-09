@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { VideoCard, VideoGrid, Skeletons, ShortsShelf } from '../components/VideoCard'
+import { VideoCard, VideoGrid, Skeletons, ShortsShelf, ShortCard } from '../components/VideoCard'
 import { ErrorBox } from '../components/ErrorBox'
 import { Infinite } from '../components/Infinite'
 import { useAsync } from '../lib/useAsync'
@@ -9,6 +9,7 @@ import { search, splitShorts, type SearchFilter, type Video } from '../lib/youtu
 
 const FILTERS: [SearchFilter, string][] = [
   ['', 'Pertinence'],
+  ['shorts', 'Shorts'],
   ['popular', 'Populaires'],
   ['today', 'Aujourd’hui'],
   ['week', 'Cette semaine'],
@@ -49,12 +50,22 @@ export function Search() {
         <Skeletons />
       ) : (
         <>
-          {showShorts && <ShortsShelf shorts={split.shorts} more={false} />}
-          <VideoGrid>
-            {split.videos.map((v) => (
-              <VideoCard key={v.id} video={v} />
-            ))}
-          </VideoGrid>
+          {filter === 'shorts' ? (
+            <div className="shorts-grid">
+              {split.shorts.map((v) => (
+                <ShortCard key={v.id} video={v} list={split.shorts} />
+              ))}
+            </div>
+          ) : (
+            showShorts && <ShortsShelf shorts={split.shorts} more={false} />
+          )}
+          {filter !== 'shorts' && (
+            <VideoGrid>
+              {split.videos.map((v) => (
+                <VideoCard key={v.id} video={v} />
+              ))}
+            </VideoGrid>
+          )}
           <Infinite hasMore={!!next} onMore={more} />
         </>
       )}

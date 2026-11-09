@@ -2,7 +2,7 @@
 // sans clé ni quota. Le module lourd est chargé une seule fois, dès le démarrage.
 import { getSettings, type LocalChannel } from './storage'
 import { canUseLocal } from './nativeFetch'
-import { themeQuery } from './i18n'
+import { prioritize, themeQuery } from './i18n'
 
 export interface Video {
   id: string
@@ -39,7 +39,7 @@ export interface Comment {
   publishedAt: string
 }
 
-export type SearchFilter = '' | 'short' | 'long' | 'today' | 'week' | 'month' | 'popular'
+export type SearchFilter = '' | 'shorts' | 'short' | 'long' | 'today' | 'week' | 'month' | 'popular'
 
 const local = () => import('./innertube')
 /** Préchauffage : charge le module et ouvre la session YouTube pendant l'affichage. */
@@ -72,7 +72,7 @@ export function splitShorts(list: Video[]) {
 
 const filtered = async (p: Promise<{ videos: Video[]; next?: string }>) => {
   const r = await p
-  return { videos: applyFilters(r.videos), next: r.next }
+  return { videos: prioritize(applyFilters(r.videos), getSettings().lang), next: r.next }
 }
 
 export const getVideos = async (ids: string[]) => {
@@ -80,7 +80,8 @@ export const getVideos = async (ids: string[]) => {
   return Promise.all(ids.map((id) => l.video(id)))
 }
 export const getTrending = async (cat?: string, token?: string) => filtered((await local()).trending(cat, token))
-export const search = async (q: string, token?: string, filter: SearchFilter = '') => filtered((await local()).search(q, token, filter))
+export const search = async (q: string, token?: string, filter: SearchFilter = '') =>
+  filtered(filter === 'shorts' ? (await local()).shorts(q, token) : (await local()).search(q, token, filter))
 export const suggest = async (q: string) => (q.trim() ? (await local()).suggest(q) : [])
 export const getChannel = async (id: string) => (await local()).channel(id)
 export const getPlaylistVideos = async (id: string, max = 30, token?: string) => (await local()).playlistVideos(id, max, token)
