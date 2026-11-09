@@ -5,29 +5,28 @@ import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-do
 import { ErrorBox } from '../components/ErrorBox'
 import { Icon } from '../components/Icon'
 import { decode, compact } from '../lib/format'
-import { toggleWatchLater, useSettings, useWatchLater } from '../lib/storage'
-import { getShorts, getVideos, type Video } from '../lib/youtube'
+import { toggleLike, useLiked, useBlocked } from '../lib/storage'
+import { applyFilters, getComments, getShorts, getVideos, search, type Video } from '../lib/youtube'
+import { useAsync } from '../lib/useAsync'
+import { Sheet } from '../components/Sheet'
+import { VideoMenu, DownloadSheet } from '../components/VideoActions'
+import { Avatar } from '../components/Layout'
 import { toStored } from '../components/VideoCard'
 import { THEMES } from '../components/Themes'
 import { Player } from '../components/Player'
 import { getStreams } from '../lib/stream'
 import { canUseLocal } from '../lib/nativeFetch'
 
-function ShortSlide({ v, active }: { v: Video; active: boolean }) {
-  const settings = useSettings()
-  const later = useWatchLater()
-  const saved = later.some((x) => x.id === v.id)
-  const src =
-    settings.player === 'invidious'
-      ? `${settings.invidiousInstance.replace(/\/+$/, '')}/embed/${v.id}?autoplay=1&loop=1`
-      : `https://www.youtube-nocookie.com/embed/${v.id}?autoplay=1&loop=1&playlist=${v.id}&playsinline=1&rel=0&iv_load_policy=3&origin=${encodeURIComponent(location.origin)}`
+function ShortSlide({ v, active, near }: { v: Video; active: boolean; near: boolean }) {
+  const liked = useLiked().some((x) => x.id === v.id)
+  const [sheet, setSheet] = useState<'' | 'info' | 'menu' | 'dl'>('')
+  const info = useAsync(() => (sheet === 'info' ? Promise.all([getVideos([v.id]).then((r) => r[0]), getComments(v.id)]) : Promise.resolve(undefined)), [sheet, v.id])
+  const st = toStored(v)
   return (
     <div className="short-slide" data-id={v.id}>
       <div className="short-frame">
-        {active && settings.player === 'direct' && canUseLocal() ? (
-          <Player id={v.id} loop />
-        ) : active ? (
-          <iframe src={src} allow="autoplay; fullscreen; encrypted-media; picture-in-picture" referrerPolicy="strict-origin-when-cross-origin" title={v.title} />
+        {active || near ? (
+          <Player id={v.id} loop bare paused={!active} />
         ) : (
           <img src={v.thumbnail} alt="" loading="lazy" onError={(e) => (e.currentTarget.src = `https://i.ytimg.com/vi/${v.id}/hqdefault.jpg`)} />
         )}
@@ -39,20 +38,50 @@ function ShortSlide({ v, active }: { v: Video; active: boolean }) {
               @{v.channelTitle}
             </Link>
           )}
-          <p>{decode(v.title)}</p>
-          {v.views > 0 && <small>{compact(v.views)} vues</small>}
+          <p onClick={() => setSheet('info')}>{decode(v.title)}</p>
         </div>
         <div className="short-actions">
-          <button className={saved ? 'on' : ''} onClick={() => toggleWatchLater(toStored(v))} aria-label="Plus tard">
-            <Icon name={saved ? 'check' : 'clock'} size={26} />
-            <span>Plus tard</span>
+          <button className={liked ? 'on' : ''} onClick={() => toggleLike(st)}>
+            <Icon name="like" size={26} fill={liked} />
+            <span>{v.views ? compact(v.views) : 'J’aime'}</span>
           </button>
-          <button onClick={() => navigator.clipboard?.writeText(`https://youtube.com/shorts/${v.id}`)} aria-label="Copier le lien">
-            <Icon name="link" size={26} />
-            <span>Lien</span>
+          <button onClick={() => setSheet('info')}>
+            <Icon name="comment" size={26} />
+            <span>Avis</span>
+          </button>
+          <button onClick={() => setSheet('dl')}>
+            <Icon name="download" size={26} />
+            <span>Télécharger</span>
+          </button>
+          <button onClick={() => setSheet('menu')}>
+            <Icon name="dots" size={26} />
+            <span>Plus</span>
           </button>
         </div>
       </div>
+      <Sheet open={sheet === 'info'} onClose={() => setSheet('')} title="Description et commentaires">
+        {!info.data ? (
+          <span className="spinner" />
+        ) : (
+          <div className="info-sheet">
+            <p className="desc-text">{info.data[0]?.description || decode(v.title)}</p>
+            <h4>{info.data[1].length} commentaires</h4>
+            {info.data[1].map((c) => (
+              <div key={c.id} className="comment">
+                <Avatar src={c.authorAvatar} name={c.author.replace(/^@/, '')} size={32} />
+                <div>
+                  <small>
+                    <strong>{c.author}</strong>
+                  </small>
+                  <p>{c.text}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </Sheet>
+      <VideoMenu video={st} open={sheet === 'menu'} onClose={() => setSheet('')} />
+      <DownloadSheet video={st} open={sheet === 'dl'} onClose={() => setSheet('')} />
     </div>
   )
 }
@@ -63,6 +92,10 @@ export function Shorts() {
   const { state } = useLocation() as { state?: { list?: Video[] } }
   const startId = params.get('v')
   const [cat, setCat] = useState<string | undefined>()
+  const [q, setQ] = useState('')
+  const [typing, setTyping] = useState(false)
+  const blocked = useBlocked()
+  const load = (token?: string) => (q ? search(q, token, 'shorts') : getShorts(cat, token))
   const [items, setItems] = useState<Video[]>([])
   const [next, setNext] = useState<string | undefined>()
   const [error, setError] = useState<Error | null>(null)
@@ -77,14 +110,14 @@ export function Shorts() {
     ;(async () => {
       try {
         let first: Video[] = []
-        if (state?.list?.length && startId) {
+        if (state?.list?.length && startId && !cat && !q) {
           const i = state.list.findIndex((x) => x.id === startId)
           first = i >= 0 ? [...state.list.slice(i), ...state.list.slice(0, i)] : state.list
-        } else if (startId && !cat) {
+        } else if (startId && !cat && !q) {
           first = await getVideos([startId]).catch(() => [])
           if (!first.length) first = [{ id: startId, title: '', description: '', channelId: '', channelTitle: '', publishedAt: '', thumbnail: `https://i.ytimg.com/vi/${startId}/hqdefault.jpg`, durationSec: 0, views: 0, likes: 0, categoryId: '', live: false, isShort: true }]
         }
-        const r = await getShorts(cat)
+        const r = await load()
         if (!alive) return
         const seen = new Set(first.map((x) => x.id))
         const list = [...first, ...r.videos.filter((x) => !seen.has(x.id))]
@@ -100,13 +133,13 @@ export function Shorts() {
       alive = false
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cat])
+  }, [cat, q])
 
   const loadMore = useCallback(async () => {
     if (!next || loading.current) return
     loading.current = true
     try {
-      const r = await getShorts(cat, next)
+      const r = await load(next)
       setItems((old) => {
         const seen = new Set(old.map((x) => x.id))
         return [...old, ...r.videos.filter((x) => !seen.has(x.id))]
@@ -115,7 +148,7 @@ export function Shorts() {
     } finally {
       loading.current = false
     }
-  }, [next, cat])
+  }, [next, cat, q])
 
   // Le Short visible à plus de 60 % devient actif.
   useEffect(() => {
@@ -127,7 +160,7 @@ export function Shorts() {
     )
     root.querySelectorAll('.short-slide').forEach((el) => io.observe(el))
     return () => io.disconnect()
-  }, [items])
+  }, [items, blocked])
 
   useEffect(() => {
     const i = items.findIndex((x) => x.id === active)
@@ -142,9 +175,23 @@ export function Shorts() {
         <button className="icon-btn" onClick={() => (history.length > 1 ? nav(-1) : nav('/'))} aria-label="Retour">
           <Icon name="back" />
         </button>
+        {typing ? (
+          <form className="shorts-search" onSubmit={(e) => (e.preventDefault(), setQ((e.currentTarget.elements[0] as HTMLInputElement).value.trim()), setTyping(false))}>
+            <input autoFocus defaultValue={q} placeholder="Rechercher des Shorts" enterKeyHint="search" />
+          </form>
+        ) : (
+          <button className="icon-btn" onClick={() => setTyping(true)} aria-label="Rechercher des Shorts">
+            <Icon name="search" />
+          </button>
+        )}
         <div className="chips">
+          {q && (
+            <button className="chip on" onClick={() => setQ('')}>
+              « {q} » ✕
+            </button>
+          )}
           {THEMES.map(([label, key]) => (key === 'all' ? [label, undefined] : [label, key]) as [string, string | undefined]).map(([label, id]) => (
-            <button key={label} className={`chip ${cat === id ? 'on' : ''}`} onClick={() => setCat(id)}>
+            <button key={label} className={`chip ${!q && cat === id ? 'on' : ''}`} onClick={() => (setQ(''), setCat(id))}>
               {label}
             </button>
           ))}
@@ -157,8 +204,8 @@ export function Shorts() {
       ) : (
         <div className="shorts-feed" ref={feed}>
           {items.length === 0 && <div className="short-slide loading">Chargement…</div>}
-          {items.map((v) => (
-            <ShortSlide key={v.id} v={v} active={v.id === active} />
+          {applyFilters(items).map((v, i, list) => (
+            <ShortSlide key={v.id} v={v} active={v.id === active} near={list[i - 1]?.id === active} />
           ))}
         </div>
       )}

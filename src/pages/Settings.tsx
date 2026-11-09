@@ -1,5 +1,5 @@
 import { useState, type ChangeEvent } from 'react'
-import { exportAll, importAll, importLocalSubs, saveSettings, useLocalSubs, useSettings } from '../lib/storage'
+import { exportAll, importAll, importLocalSubs, saveSettings, toggleBlock, useBlocked, useLocalSubs, useSettings } from '../lib/storage'
 import { canUseLocal } from '../lib/nativeFetch'
 import { LANGS } from '../lib/i18n'
 import { cloudState, connect, disconnect, sync } from '../lib/cloud'
@@ -24,6 +24,26 @@ function parseTakeout(csv: string) {
     .map((line) => line.split(','))
     .filter((cols) => /^UC[\w-]{22}$/.test(cols[0]?.trim()))
     .map((cols) => ({ id: cols[0].trim(), title: cols.slice(2).join(',').trim(), thumbnail: '' }))
+}
+
+const ACCENTS = ['#19c3ae', '#3b82f6', '#8b5cf6', '#ec4899', '#ef4444', '#f97316', '#eab308', '#22c55e']
+
+function BlockedSection() {
+  const list = useBlocked()
+  if (!list.length) return null
+  return (
+    <section>
+      <h2>Chaînes masquées</h2>
+      {list.map((c) => (
+        <div key={c.id + c.title} className="channel-row">
+          <span>{c.title}</span>
+          <button className="btn ghost small" onClick={() => toggleBlock(c)}>
+            Réafficher
+          </button>
+        </div>
+      ))}
+    </section>
+  )
 }
 
 function CloudSection() {
@@ -131,12 +151,41 @@ export function Settings() {
           <input type="checkbox" checked={s.showShorts} onChange={(e) => saveSettings({ showShorts: e.target.checked })} />
           Afficher les Shorts (onglet dédié et étagères, séparés des vidéos classiques)
         </label>
-        <label className="toggle">
-          <input type="checkbox" checked={s.hideGaming} onChange={(e) => saveSettings({ hideGaming: e.target.checked })} />
-          Masquer les vidéos de la catégorie « Jeux vidéo »
-        </label>
         <p className="muted">Les jeux intégrés (Playables) et les publicités dans le flux n’existent pas dans Youfree.</p>
       </section>
+
+      <section>
+        <h2>Personnalisation</h2>
+        <label>Couleur principale</label>
+        <div className="swatches">
+          {ACCENTS.map((c) => (
+            <button key={c} className={s.accent === c ? 'on' : ''} style={{ background: c }} onClick={() => saveSettings({ accent: c })} aria-label={c} />
+          ))}
+        </div>
+        <label>Taille des vignettes</label>
+        <div className="segmented">
+          <button className={s.density === 'comfort' ? 'on' : ''} onClick={() => saveSettings({ density: 'comfort' })}>Grandes</button>
+          <button className={s.density === 'compact' ? 'on' : ''} onClick={() => saveSettings({ density: 'compact' })}>Compactes</button>
+        </div>
+        <label>Sections de l’accueil</label>
+        {(
+          [
+            ['continue', 'Reprendre'],
+            ['shorts', 'Shorts'],
+            ['subs', 'Nouveautés des abonnements'],
+            ['popular', 'Pour toi / Populaire'],
+          ] as const
+        ).map(([k, l]) => (
+          <label key={k} className="toggle">
+            <input type="checkbox" checked={s.sections[k]} onChange={(e) => saveSettings({ sections: { ...s.sections, [k]: e.target.checked } })} /> {l}
+          </label>
+        ))}
+        <label className="toggle">
+          <input type="checkbox" checked={s.autoNext} onChange={(e) => saveSettings({ autoNext: e.target.checked })} /> Enchaîner automatiquement la vidéo suivante
+        </label>
+      </section>
+
+      <BlockedSection />
 
       <section>
         <h2>Apparence</h2>

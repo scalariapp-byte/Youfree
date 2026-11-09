@@ -104,13 +104,6 @@ export function Welcome() {
             </div>
             <div className="pref">
               <span>
-                <strong>Vidéos de jeux vidéo</strong>
-                <small>Les masquer partout</small>
-              </span>
-              <button className={`switch ${s.hideGaming ? 'on' : ''}`} onClick={() => saveSettings({ hideGaming: !s.hideGaming })} aria-label="Masquer les jeux" />
-            </div>
-            <div className="pref">
-              <span>
                 <strong>Thème</strong>
               </span>
               <div className="segmented">

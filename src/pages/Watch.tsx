@@ -6,9 +6,10 @@ import { ErrorBox } from '../components/ErrorBox'
 import { useAsync } from '../lib/useAsync'
 import { getChannel, getComments, getPlaylistVideos, getVideos } from '../lib/youtube'
 import { compact, ago, decode } from '../lib/format'
-import { getHistory, recordWatch, toggleLocalSub, toggleWatchLater, useLocalSubs, useWatchLater } from '../lib/storage'
+import { getHistory, recordWatch, saveSettings, toggleLike, toggleLocalSub, toggleWatchLater, useLiked, useLocalSubs, useSettings, useWatchLater } from '../lib/storage'
 import { useAllSubs } from '../lib/useSubs'
 import { Icon } from '../components/Icon'
+import { DownloadSheet } from '../components/VideoActions'
 import { Avatar } from '../components/Layout'
 
 function Linkified({ text }: { text: string }) {
@@ -45,7 +46,10 @@ export function Watch() {
   const tParam = params.get('t')
   const start = tParam ? Number(tParam) : getHistory().find((h) => h.id === id)?.position ?? 0
   const [showDesc, setShowDesc] = useState(false)
-  const [autoplay, setAutoplay] = useState(false)
+  const autoplay = useSettings().autoNext
+  const setAutoplay = (b: boolean) => saveSettings({ autoNext: b })
+  const liked = useLiked()
+  const [dl, setDl] = useState(false)
   const later = useWatchLater()
   const localSubs = useLocalSubs()
   const { google } = useAllSubs()
@@ -110,6 +114,13 @@ export function Watch() {
                     <Icon name="like" size={18} /> {compact(v.likes)}
                   </span>
                 )}
+                <button className={`pill ${liked.some((x) => x.id === v.id) ? 'on' : ''}`} onClick={() => toggleLike(toStored(v))}>
+                  <Icon name="like" size={18} fill={liked.some((x) => x.id === v.id)} /> J’aime
+                </button>
+                <button className="pill" onClick={() => setDl(true)}>
+                  <Icon name="download" size={18} /> Télécharger
+                </button>
+                <DownloadSheet video={toStored(v)} open={dl} onClose={() => setDl(false)} />
                 <button className="pill" onClick={() => toggleWatchLater(toStored(v))}>
                   <Icon name={later.some((x) => x.id === v.id) ? 'check' : 'clock'} size={18} /> Plus tard
                 </button>

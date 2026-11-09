@@ -21,7 +21,14 @@ export function Logo({ compact = false }: { compact?: boolean }) {
 
 /** Applique le thème choisi (sombre par défaut) sur <html>. */
 export function useTheme() {
-  const { theme } = useSettings()
+  const { theme, accent, density } = useSettings()
+  useEffect(() => {
+    const st = document.documentElement.style
+    st.setProperty('--accent', accent)
+    const [r, g, b] = [1, 3, 5].map((i) => parseInt(accent.slice(i, i + 2), 16))
+    st.setProperty('--accent-text', 0.299 * r + 0.587 * g + 0.114 * b > 150 ? '#03201c' : '#ffffff')
+    document.documentElement.dataset.density = density
+  }, [accent, density])
   useEffect(() => {
     const root = document.documentElement
     if (theme === 'system') delete root.dataset.theme

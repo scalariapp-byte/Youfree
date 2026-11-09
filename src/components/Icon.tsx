@@ -19,6 +19,10 @@ const PATHS: Record<string, string> = {
   refresh: 'M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7',
   volume: 'M4 9v6h4l5 4V5L8 9zm12 0a4 4 0 0 1 0 6',
   mute: 'M4 9v6h4l5 4V5L8 9zm12 0 5 6m0-6-5 6',
+  download: 'M12 3v12m-5-5 5 5 5-5M4 20h16',
+  block: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM5.6 5.6l12.8 12.8',
+  dots: 'M12 5h.01M12 12h.01M12 19h.01',
+  comment: 'M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z',
   user: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zm-8 9a8 8 0 0 1 16 0',
 }
 

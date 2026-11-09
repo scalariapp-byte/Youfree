@@ -63,7 +63,7 @@ export function Diagnostic() {
       detail: [
         `plateforme=${Capacitor.getPlatform()} natif=${isNative()} sansCléPossible=${canUseLocal()}`,
         `région=${st.region} lecteur=${st.player}`,
-        `shorts=${st.showShorts} jeux masqués=${st.hideGaming}`,
+        `shorts=${st.showShorts}`,
         `navigateur=${navigator.userAgent}`,
       ].join('\n'),
     })
@@ -105,6 +105,12 @@ export function Diagnostic() {
         const c = await local.channel('UC4QobU6STFB0P71PMvOGN5A')
         const v = await local.playlistVideos('UU4QobU6STFB0P71PMvOGN5A')
         return `${c.title} | ${c.subscribers} abonnés | ${v.videos.length} vidéos`
+      })
+      await step('Flux vidéo (lecture sans pub, téléchargement)', async () => {
+        const { getStreams, downloadOptions } = await import('../lib/stream')
+        const st = await getStreams('jNQXAC9IVRw')
+        const r = await localFetch(st.video, { headers: { Range: 'bytes=0-1023' } })
+        return `client=${st.client} qualités=${st.qualities.map((q) => q.height).join(',')} téléchargement=${downloadOptions(st).map((o) => o.height).join(',')}\naccès au flux : HTTP ${r.status}`
       })
     }
     setRunning(false)

@@ -1,11 +1,12 @@
-import { Children, memo } from 'react'
+import { Children, memo, useState } from 'react'
+import { VideoMenu } from './VideoActions'
 import { Link } from 'react-router-dom'
 import { getVideos, type Video } from '../lib/youtube'
 import { prefetch } from '../lib/useAsync'
 import { getStreams } from '../lib/stream'
 import { canUseLocal } from '../lib/nativeFetch'
 import { compact, duration, ago, decode } from '../lib/format'
-import { toggleWatchLater, useWatchLater, type StoredVideo } from '../lib/storage'
+import type { StoredVideo } from '../lib/storage'
 import { Empty } from './ErrorBox'
 import { Avatar } from './Layout'
 import { Icon } from './Icon'
@@ -33,8 +34,7 @@ export function warm(id: string) {
 }
 
 export const VideoCard = memo(function VideoCard({ video, progress, subtitle, onRemove }: Props) {
-  const later = useWatchLater()
-  const saved = later.some((x) => x.id === video.id)
+  const [menu, setMenu] = useState(false)
   const full = 'views' in video ? video : null
   const pct = progress && video.durationSec ? Math.min(100, (progress / video.durationSec) * 100) : 0
   const meta =
@@ -66,12 +66,8 @@ export const VideoCard = memo(function VideoCard({ video, progress, subtitle, on
           </div>
         </div>
         <div className="card-actions">
-          <button
-            className={`icon-btn small ${saved ? 'on' : ''}`}
-            title={saved ? 'Retirer de « Plus tard »' : 'Regarder plus tard'}
-            onClick={() => toggleWatchLater('views' in video ? toStored(video) : video)}
-          >
-            <Icon name={saved ? 'check' : 'clock'} size={18} />
+          <button className="icon-btn small" aria-label="Options" onClick={() => setMenu(true)}>
+            <Icon name="dots" size={20} />
           </button>
           {onRemove && (
             <button className="icon-btn small" title="Retirer" onClick={onRemove}>
@@ -79,6 +75,7 @@ export const VideoCard = memo(function VideoCard({ video, progress, subtitle, on
             </button>
           )}
         </div>
+        <VideoMenu video={'views' in video ? toStored(video) : video} open={menu} onClose={() => setMenu(false)} />
       </div>
     </article>
   )

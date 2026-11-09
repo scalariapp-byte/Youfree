@@ -1,6 +1,6 @@
 // Point d'entrée des données : tout passe par le téléphone (InnerTube via youtubei.js),
 // sans clé ni quota. Le module lourd est chargé une seule fois, dès le démarrage.
-import { getSettings, type LocalChannel } from './storage'
+import { getBlocked, getSettings, type LocalChannel } from './storage'
 import { canUseLocal } from './nativeFetch'
 import { prioritize, themeQuery } from './i18n'
 
@@ -48,10 +48,13 @@ export const warmUp = () => canUseLocal() && local().then((m) => m.warm()).catch
 export const isAvailable = canUseLocal
 export const uploadsOf = (channelId: string) => 'UU' + channelId.slice(2)
 
-export const GAMING_CATEGORY = '20'
+/** Retire les chaînes masquées par l'utilisateur. */
 export function applyFilters(videos: Video[]): Video[] {
-  const { hideGaming } = getSettings()
-  return videos.filter((v) => v.id && !(hideGaming && v.categoryId === GAMING_CATEGORY))
+  const blocked = getBlocked()
+  if (!blocked.length) return videos.filter((v) => v.id)
+  const ids = new Set(blocked.map((c) => c.id))
+  const names = new Set(blocked.map((c) => c.title))
+  return videos.filter((v) => v.id && !ids.has(v.channelId) && !names.has(v.channelTitle))
 }
 
 export const isShortVideo = (v: Video) =>
@@ -62,7 +65,7 @@ export function splitShorts(list: Video[]) {
   const videos: Video[] = []
   const shorts: Video[] = []
   const seen = new Set<string>()
-  for (const v of list) {
+  for (const v of applyFilters(list)) {
     if (seen.has(v.id)) continue
     seen.add(v.id)
     ;(isShortVideo(v) ? shorts : videos).push(v)

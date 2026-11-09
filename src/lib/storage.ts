@@ -12,7 +12,10 @@ export interface Settings {
   interests: string[]
   onboarded: boolean
   theme: 'dark' | 'light' | 'system'
-  hideGaming: boolean
+  accent: string
+  density: 'comfort' | 'compact'
+  sections: { continue: boolean; shorts: boolean; subs: boolean; popular: boolean }
+  autoNext: boolean
   player: 'direct' | 'nocookie' | 'invidious'
   invidiousInstance: string
 }
@@ -48,7 +51,10 @@ const DEFAULT_SETTINGS: Settings = {
   interests: [],
   onboarded: false,
   theme: 'dark',
-  hideGaming: false,
+  accent: '#19c3ae',
+  density: 'comfort',
+  sections: { continue: true, shorts: true, subs: true, popular: true },
+  autoNext: false,
   player: 'direct',
   invidiousInstance: 'https://yewtu.be',
 }
@@ -139,10 +145,26 @@ export function importLocalSubs(channels: LocalChannel[]) {
   write('subs', [...map.values()])
 }
 
+// ---- J'aime (local, synchronisé avec la sauvegarde Google)
+export const getLiked = () => read<StoredVideo[]>('liked', [])
+export const useLiked = () => useSyncExternalStore(subscribe, getLiked)
+export function toggleLike(v: StoredVideo) {
+  const l = getLiked()
+  write('liked', l.some((x) => x.id === v.id) ? l.filter((x) => x.id !== v.id) : [v, ...l])
+}
+
+// ---- Chaînes masquées
+export const getBlocked = () => read<LocalChannel[]>('blocked', [])
+export const useBlocked = () => useSyncExternalStore(subscribe, getBlocked)
+export function toggleBlock(c: LocalChannel) {
+  const l = getBlocked()
+  write('blocked', l.some((x) => x.id === c.id || (!!c.title && x.title === c.title)) ? l.filter((x) => x.id !== c.id && x.title !== c.title) : [...l, c])
+}
+
 // ---- Export / import complet
 export function exportAll() {
   return JSON.stringify(
-    { version: 1, settings: getSettings(), history: getHistory(), watchLater: getWatchLater(), subs: getLocalSubs() },
+    { version: 1, settings: getSettings(), history: getHistory(), watchLater: getWatchLater(), subs: getLocalSubs(), liked: getLiked(), blocked: getBlocked() },
     null,
     2,
   )
@@ -160,6 +182,8 @@ export function mergeAll(json: string) {
   ;(d.watchLater ?? []).forEach((v: StoredVideo) => later.has(v.id) || later.set(v.id, v))
   write('watchLater', [...later.values()])
   if (d.subs) importLocalSubs(d.subs)
+  if (d.liked) write('liked', [...new Map([...d.liked, ...getLiked()].map((v: StoredVideo) => [v.id, v])).values()])
+  if (d.blocked) write('blocked', [...new Map([...d.blocked, ...getBlocked()].map((c: LocalChannel) => [c.id, c])).values()])
   if (d.settings) {
     const { googleClientId: _g, ...rest } = d.settings
     write('settings', { ...rest, ...read<Partial<Settings>>('settings', {}), onboarded: true })

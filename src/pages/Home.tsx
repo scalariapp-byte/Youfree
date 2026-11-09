@@ -8,7 +8,7 @@ import { ErrorBox } from '../components/ErrorBox'
 import { ThemeChips } from '../components/Themes'
 import { useAsync } from '../lib/useAsync'
 import { useAllSubs } from '../lib/useSubs'
-import { useHistory, useSettings } from '../lib/storage'
+import { useHistory, useSettings, useBlocked } from '../lib/storage'
 import { getShorts, getSubscriptionFeed, getTrending, isAvailable, splitShorts } from '../lib/youtube'
 import { Onboarding } from './Onboarding'
 
@@ -41,13 +41,14 @@ async function forYou(interests: string[]) {
 
 export function Home() {
   const settings = useSettings()
+  const blocked = useBlocked()
   const { all, loading } = useAllSubs()
   const [cat, setCat] = useState<string | undefined>()
   const key = all.map((c) => c.id).join(',')
 
-  const feed = useAsync(() => (all.length ? getSubscriptionFeed(all) : Promise.resolve([])), [key, settings.hideGaming], `feed:${key}`)
+  const feed = useAsync(() => (all.length ? getSubscriptionFeed(all) : Promise.resolve([])), [key, blocked.length], `feed:${key}`)
   const mix = !cat && settings.interests.length > 0
-  const popular = useAsync(() => (mix ? forYou(settings.interests) : getTrending(cat)), [cat, settings.region, settings.hideGaming], `pop:${settings.lang}:${settings.region}:${cat ?? ''}:${mix ? settings.interests.join('.') : ''}`)
+  const popular = useAsync(() => (mix ? forYou(settings.interests) : getTrending(cat)), [cat, settings.region, blocked.length], `pop:${settings.lang}:${settings.region}:${cat ?? ''}:${mix ? settings.interests.join('.') : ''}`)
   const shorts = useAsync(() => (settings.showShorts ? getShorts(cat) : Promise.resolve({ videos: [], next: undefined })), [cat, settings.showShorts, settings.region], `sh:${settings.lang}:${settings.region}:${cat ?? ''}:${settings.showShorts}`)
 
   if (!isAvailable()) return <Onboarding />
@@ -59,11 +60,11 @@ export function Home() {
   return (
     <div className="page">
       <ThemeChips value={cat} onChange={setCat} />
-      {!cat && <ContinueWatching />}
+      {!cat && settings.sections.continue && <ContinueWatching />}
 
-      {shelf.length > 0 && <ShortsShelf shorts={shelf} />}
+      {settings.sections.shorts && shelf.length > 0 && <ShortsShelf shorts={shelf} />}
 
-      {!cat && (all.length > 0 || loading) && (
+      {!cat && settings.sections.subs && (all.length > 0 || loading) && (
         <section>
           <div className="section-head">
             <h2>Nouveautés de tes abonnements</h2>
@@ -79,7 +80,7 @@ export function Home() {
         </section>
       )}
 
-      <section>
+      {(cat || settings.sections.popular) && <section>
         <div className="section-head">
           <h2>{cat ? 'Populaire dans ce thème' : mix ? 'Pour toi' : 'Populaire en ce moment'}</h2>
           <Link to="/trending">Explorer</Link>
@@ -91,7 +92,7 @@ export function Home() {
             ))}
           </VideoGrid>
         )}
-      </section>
+      </section>}
     </div>
   )
 }

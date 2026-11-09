@@ -29,13 +29,18 @@ function loadYT() {
 }
 
 /** Lecteur natif sans pub : vidéo et audio séparés, synchronisés. */
-function DirectPlayer({ id, start, onEnded, onFail, loop }: { id: string; start: number; onEnded?: () => void; onFail: () => void; loop?: boolean }) {
+function DirectPlayer({ id, start, onEnded, onFail, loop, bare, paused }: { id: string; start: number; onEnded?: () => void; onFail: (why: string) => void; loop?: boolean; bare?: boolean; paused?: boolean }) {
   const settings = useSettings()
   const [s, setS] = useState<Streams | null>(null)
   const [src, setSrc] = useState('')
   const [panel, setPanel] = useState(false)
   const [looping, setLooping] = useState(false)
   const [sleep, setSleep] = useState(0)
+  useEffect(() => {
+    if (!v.current) return
+    if (paused) v.current.pause()
+    else v.current.play().catch(() => {})
+  }, [paused, s])
   // Minuterie de veille : met en pause après N minutes.
   useEffect(() => {
     if (!sleep) return
@@ -48,7 +53,7 @@ function DirectPlayer({ id, start, onEnded, onFail, loop }: { id: string; start:
     let ok = true
     getStreams(id).then(
       (r) => ok && (setS(r), setSrc((r.qualities.find((q) => q.height <= settings.quality) ?? r.qualities[r.qualities.length - 1])?.url ?? r.video)),
-      () => ok && onFail(),
+      (e) => ok && onFail((e as Error).message),
     )
     return () => {
       ok = false
@@ -91,17 +96,19 @@ function DirectPlayer({ id, start, onEnded, onFail, loop }: { id: string; start:
       <video
         ref={v}
         src={src}
-        autoPlay
+        autoPlay={!paused}
+        preload="auto"
         playsInline
-        controls
+        controls={!bare}
+        onClick={bare ? (e) => (e.currentTarget.paused ? e.currentTarget.play() : e.currentTarget.pause()) : undefined}
         loop={loop || looping}
         style={{ objectFit: settings.fit }}
         onLoadedMetadata={(e) => (e.currentTarget.playbackRate = settings.speed)}
         onEnded={() => (updatePosition(id, 0), onEnded?.())}
-        onError={onFail}
+        onError={() => onFail('lecture refusée par le serveur vidéo')}
       />
-      {s.audio && <audio ref={a} src={s.audio} preload="auto" onError={onFail} />}
-      {!loop && (
+      {s.audio && <audio ref={a} src={s.audio} preload="auto" onError={() => onFail('piste audio refusée')} />}
+      {!bare && (
         <button className="player-gear" onClick={() => setPanel(!panel)} aria-label="Réglages de lecture">
           <Icon name="settings" size={20} />
         </button>
@@ -163,12 +170,18 @@ function DirectPlayer({ id, start, onEnded, onFail, loop }: { id: string; start:
   )
 }
 
-export function Player(props: { id: string; start?: number; onEnded?: () => void; loop?: boolean }) {
+export function Player(props: { id: string; start?: number; onEnded?: () => void; loop?: boolean; bare?: boolean; paused?: boolean }) {
   const settings = useSettings()
-  const [failed, setFailed] = useState<string | null>(null)
-  if (settings.player === 'direct' && canUseLocal() && failed !== props.id)
-    return <DirectPlayer id={props.id} start={props.start ?? 0} onEnded={props.onEnded} onFail={() => setFailed(props.id)} loop={props.loop} />
-  return <EmbedPlayer {...props} />
+  const [failed, setFailed] = useState<{ id: string; why: string } | null>(null)
+  if (settings.player === 'direct' && canUseLocal() && failed?.id !== props.id)
+    return <DirectPlayer id={props.id} start={props.start ?? 0} onEnded={props.onEnded} onFail={(why) => setFailed({ id: props.id, why })} loop={props.loop} bare={props.bare} paused={props.paused} />
+  if (props.paused) return <div className="player" />
+  return (
+    <>
+      <EmbedPlayer {...props} />
+      {failed && <div className="fallback-note">Lecture sans pub impossible ({failed.why}). Lecteur YouTube utilisé.</div>}
+    </>
+  )
 }
 
 function EmbedPlayer({ id, start = 0, onEnded }: { id: string; start?: number; onEnded?: () => void }) {

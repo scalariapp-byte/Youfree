@@ -1,17 +1,19 @@
 import { useState } from 'react'
 import { VideoCard, VideoGrid } from '../components/VideoCard'
 import { ago } from '../lib/format'
-import { clearHistory, removeFromHistory, toggleWatchLater, useHistory, useWatchLater } from '../lib/storage'
+import { clearHistory, removeFromHistory, toggleLike, toggleWatchLater, useHistory, useLiked, useWatchLater } from '../lib/storage'
 
-type Tab = 'history' | 'later'
+type Tab = 'history' | 'later' | 'liked'
 
 export function Library() {
   const history = useHistory()
   const later = useWatchLater()
+  const liked = useLiked()
   const [tab, setTab] = useState<Tab>('history')
   const tabs: [Tab, string][] = [
     ['history', 'Historique'],
     ['later', `Plus tard (${later.length})`],
+    ['liked', `J’aime (${liked.length})`],
   ]
 
   return (
@@ -37,6 +39,16 @@ export function Library() {
           </VideoGrid>
         ) : (
           <p className="muted">Historique vide. Il est stocké uniquement sur cet appareil.</p>
+        ))}
+      {tab === 'liked' &&
+        (liked.length ? (
+          <VideoGrid>
+            {liked.map((v) => (
+              <VideoCard key={v.id} video={v} subtitle="" onRemove={() => toggleLike(v)} />
+            ))}
+          </VideoGrid>
+        ) : (
+          <p className="muted">Aucune vidéo aimée pour l’instant.</p>
         ))}
       {tab === 'later' &&
         (later.length ? (

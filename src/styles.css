@@ -547,3 +547,83 @@ button.pill:hover { background: var(--surface-3); }
 
 /* ============ Transitions entre pages ============ */
 ::view-transition-old(root), ::view-transition-new(root) { animation-duration: .22s; animation-timing-function: cubic-bezier(.2,.8,.2,1); }
+
+/* ============ Design « halo » ============ */
+body::before {
+  content: ''; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+  background:
+    radial-gradient(120% 60% at 0% 0%, color-mix(in srgb, var(--accent) 22%, transparent), transparent 60%),
+    radial-gradient(90% 50% at 100% 100%, color-mix(in srgb, var(--accent) 14%, transparent), transparent 60%);
+}
+body { background: var(--bg); }
+.topbar { background: color-mix(in srgb, var(--bg) 70%, transparent); border-bottom-color: transparent; }
+.topbar::after {
+  content: ''; position: absolute; left: 0; right: 0; bottom: -1px; height: 1px;
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--accent) 60%, transparent), transparent);
+}
+.logo svg { filter: drop-shadow(0 4px 14px color-mix(in srgb, var(--accent) 55%, transparent)); }
+.topbar-actions .icon-btn { background: color-mix(in srgb, var(--surface-2) 70%, transparent); border: 1px solid var(--border); }
+.page-title { display: flex; align-items: center; gap: 12px; font-size: 1.6rem; font-weight: 800; }
+.page-title::before { content: ''; width: 4px; height: 1.1em; border-radius: 4px; background: var(--accent); box-shadow: 0 0 12px var(--accent); }
+.chip { border: 1px solid var(--border); background: color-mix(in srgb, var(--surface) 80%, transparent); }
+.chip.on { background: var(--accent); color: var(--accent-text); border-color: transparent; box-shadow: 0 6px 22px color-mix(in srgb, var(--accent) 45%, transparent); }
+.shelf { margin-left: 0; margin-right: 0; border: 1px solid var(--border); background: linear-gradient(180deg, color-mix(in srgb, var(--surface) 90%, transparent), color-mix(in srgb, var(--bg) 60%, transparent)); border-radius: 22px; }
+.section-head a { padding: 6px 12px; border-radius: 99px; border: 1px solid var(--border); color: var(--muted); font-weight: 600; }
+.section-head a::after { content: ' ›'; }
+.card .thumb { border-radius: 16px; }
+.card-actions { opacity: 1; }
+.pill.on { background: var(--accent); color: var(--accent-text); }
+
+/* Barre d'onglets flottante */
+@media (max-width: 860px) {
+  .tabbar {
+    left: 10px; right: 10px; bottom: calc(10px + env(safe-area-inset-bottom)); height: var(--tab); padding: 0;
+    border: 1px solid color-mix(in srgb, var(--accent) 25%, var(--border)); border-radius: 26px;
+    background: color-mix(in srgb, var(--bg-elev) 82%, transparent);
+    box-shadow: 0 -6px 30px color-mix(in srgb, var(--accent) 18%, transparent), 0 10px 30px rgb(0 0 0 / .4);
+  }
+  .tabbar a.active { color: var(--accent); }
+  .tabbar a.active::before { top: auto; bottom: 6px; width: 26px; height: 3px; background: var(--accent); box-shadow: 0 0 10px var(--accent); }
+  .content { padding-bottom: calc(var(--tab) + 40px + env(safe-area-inset-bottom)); }
+  .immersive .tabbar { background: rgb(0 0 0 / .75); }
+  .shorts-page { height: 100dvh; }
+  .short-overlay { padding-bottom: calc(var(--tab) + 26px + env(safe-area-inset-bottom)); }
+}
+
+/* Compact */
+:root[data-density='compact'] .grid { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 18px 12px; }
+@media (max-width: 560px) {
+  :root[data-density='compact'] .grid { grid-template-columns: 1fr 1fr; }
+  :root[data-density='compact'] .grid .card .thumb { margin: 0; border-radius: 12px; }
+  :root[data-density='compact'] .card-avatar { display: none; }
+  :root[data-density='compact'] .card-title { font-size: .85rem; }
+}
+
+/* Feuilles du bas */
+.sheet-back { position: fixed; inset: 0; z-index: 200; background: rgb(0 0 0 / .5); display: flex; align-items: flex-end; justify-content: center; animation: fadeBg .2s; }
+@keyframes fadeBg { from { opacity: 0; } }
+.sheet {
+  width: min(640px, 100%); max-height: 78vh; overflow-y: auto; padding: 8px 16px calc(20px + env(safe-area-inset-bottom));
+  border-radius: 24px 24px 0 0; background: var(--bg-elev); border: 1px solid var(--border); border-bottom: 0;
+  animation: sheetUp .32s cubic-bezier(.2,.9,.2,1); color: var(--text);
+}
+@keyframes sheetUp { from { transform: translateY(100%); } }
+.sheet-grip { width: 40px; height: 4px; border-radius: 4px; background: var(--surface-3); margin: 4px auto 12px; }
+.sheet h3 { margin: 0 0 12px; }
+.sheet-list { display: flex; flex-direction: column; }
+.sheet-list button { display: flex; align-items: center; gap: 14px; padding: 14px 8px; border: 0; background: none; border-radius: 12px; font-weight: 550; text-align: left; }
+.sheet-list button:active { background: var(--surface-2); }
+.sheet-list button small { margin-left: auto; color: var(--muted); }
+.sheet-list button.danger { color: var(--danger); }
+.info-sheet .desc-text { white-space: pre-wrap; overflow-wrap: anywhere; padding: 12px; border-radius: 12px; background: var(--surface-2); }
+.dl-progress { padding: 12px 0; }
+.dl-progress .bar { height: 8px; border-radius: 8px; background: var(--surface-3); overflow: hidden; margin-bottom: 8px; }
+.dl-progress .bar span { display: block; height: 100%; background: var(--accent); transition: width .3s; box-shadow: 0 0 12px var(--accent); }
+.swatches { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 14px; }
+.swatches button { width: 36px; height: 36px; border-radius: 50%; border: 3px solid transparent; transition: transform .2s; }
+.swatches button.on { border-color: var(--text); transform: scale(1.12); }
+.settings label:not(.toggle):not(.btn) + .segmented { margin-bottom: 14px; }
+.fallback-note { position: absolute; left: 8px; right: 8px; bottom: 8px; z-index: 5; padding: 8px 10px; border-radius: 10px; background: rgb(0 0 0 / .75); color: #fff; font-size: .75rem; }
+.shorts-search input { height: 36px; width: min(60vw, 280px); padding: 0 14px; border-radius: 99px; border: 0; background: rgb(255 255 255 / .16); color: #fff; font: inherit; outline: none; backdrop-filter: blur(8px); }
+.short-frame video { object-fit: cover; }
+.short-text p { cursor: pointer; }

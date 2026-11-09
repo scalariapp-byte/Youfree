@@ -1,46 +1,83 @@
-// Lecture sans pub : le téléphone récupère lui-même les flux vidéo/audio (client ANDROID_VR,
-// qui renvoie des URL directes) et les lit dans des balises <video>/<audio>. Pas de lecteur YouTube.
-
+// Lecture et téléchargement sans pub : le téléphone récupère lui-même les flux.
+// Plusieurs clients InnerTube sont essayés : le premier qui renvoie des URL directes gagne.
 /* eslint-disable @typescript-eslint/no-explicit-any */
+export interface Fmt {
+  url: string
+  height: number
+  mime: string
+  bitrate: number
+  audio: boolean
+  video: boolean
+}
 export interface Streams {
   video: string
   audio?: string
   height: number
   qualities: { height: number; url: string }[]
+  formats: Fmt[]
+  client: string
 }
 
+const CLIENTS = ['ANDROID_VR', 'IOS', 'ANDROID'] as const
 const cache = new Map<string, Promise<Streams>>()
+export let lastStreamError = ''
+
+async function fetchStreams(id: string): Promise<Streams> {
+  const yt = await (await import('./innertube')).getClient()
+  const errors: string[] = []
+  for (const client of CLIENTS) {
+    try {
+      const info: any = await yt.getBasicInfo(id, { client })
+      const sd = info.streaming_data
+      if (!sd) throw new Error(info.playability_status?.reason || info.playability_status?.status || 'pas de flux')
+      const formats: Fmt[] = [...(sd.formats ?? []), ...(sd.adaptive_formats ?? [])]
+        .filter((f: any) => f.url)
+        .map((f: any) => ({ url: f.url, height: f.height ?? 0, mime: f.mime_type ?? '', bitrate: f.bitrate ?? 0, audio: !!f.has_audio, video: !!f.has_video }))
+      if (!formats.length) throw new Error('URL chiffrées')
+      const audio = formats.filter((f) => f.audio && !f.video && /mp4/.test(f.mime)).sort((a, b) => b.bitrate - a.bitrate)[0]
+      const byH = new Map<number, Fmt>()
+      formats.filter((f) => f.video && !f.audio && /avc1/.test(f.mime)).forEach((f) => (!byH.has(f.height) || f.bitrate > byH.get(f.height)!.bitrate) && byH.set(f.height, f))
+      const qualities = [...byH.values()].sort((a, b) => b.height - a.height).map((f) => ({ height: f.height, url: f.url }))
+      if (audio && qualities.length) {
+        const pick = qualities.find((q) => q.height <= 720) ?? qualities[qualities.length - 1]
+        return { video: pick.url, audio: audio.url, height: pick.height, qualities, formats, client }
+      }
+      const prog = formats.filter((f) => f.audio && f.video).sort((a, b) => b.height - a.height)[0]
+      if (!prog) throw new Error('aucun format lisible')
+      return { video: prog.url, height: prog.height, qualities: [{ height: prog.height, url: prog.url }], formats, client }
+    } catch (e) {
+      errors.push(`${client}: ${(e as Error).message}`)
+    }
+  }
+  lastStreamError = errors.join(' · ')
+  throw new Error(lastStreamError)
+}
 
 export function getStreams(id: string): Promise<Streams> {
   if (!cache.has(id)) {
-    const p = (async () => {
-      const yt = await (await import('./innertube')).getClient()
-      const info: any = await yt.getBasicInfo(id, { client: 'ANDROID_VR' })
-      const sd = info.streaming_data
-      if (!sd) throw new Error(info.playability_status?.reason || 'Flux indisponible')
-      const adaptive: any[] = (sd.adaptive_formats ?? []).filter((f: any) => f.url)
-      const audio = adaptive
-        .filter((f) => f.has_audio && !f.has_video && /mp4/.test(f.mime_type) && !f.is_drc)
-        .sort((a, b) => (b.bitrate ?? 0) - (a.bitrate ?? 0))[0]
-      const byHeight = new Map<number, any>()
-      adaptive
-        .filter((f) => f.has_video && !f.has_audio && /avc1/.test(f.mime_type) && (f.height ?? 0) <= 1080)
-        .forEach((f) => {
-          const cur = byHeight.get(f.height)
-          if (!cur || (f.fps ?? 30) > (cur.fps ?? 30)) byHeight.set(f.height, f)
-        })
-      const qualities = [...byHeight.values()].sort((a, b) => b.height - a.height).map((f) => ({ height: f.height, url: f.url }))
-      if (audio && qualities.length) {
-        const pick = qualities.find((q) => q.height <= 720) ?? qualities[qualities.length - 1]
-        return { video: pick.url, audio: audio.url, height: pick.height, qualities }
-      }
-      const prog = (sd.formats ?? []).filter((f: any) => f.url).sort((a: any, b: any) => (b.height ?? 0) - (a.height ?? 0))[0]
-      if (!prog) throw new Error('Aucun flux lisible')
-      return { video: prog.url, height: prog.height ?? 360, qualities: [{ height: prog.height ?? 360, url: prog.url }] }
-    })()
+    const p = fetchStreams(id)
     cache.set(id, p)
     p.catch(() => cache.delete(id))
-    setTimeout(() => cache.delete(id), 4 * 3600_000) // les URL expirent après ~6 h
+    setTimeout(() => cache.delete(id), 4 * 3600_000)
   }
   return cache.get(id)!
+}
+
+/** Options de téléchargement : meilleure vidéo par hauteur (jusqu'à 4K) + piste audio compatible. */
+export function downloadOptions(s: Streams) {
+  const best = new Map<number, Fmt>()
+  for (const f of s.formats.filter((f) => f.video && !f.audio && !/av01/.test(f.mime))) {
+    const cur = best.get(f.height)
+    // VP9 (webm) au-delà de 1080p, H.264 (mp4) sinon : compatibles avec le multiplexeur Android.
+    const pref = (x: Fmt) => (x.height > 1080 ? /vp9|vp09/.test(x.mime) : /avc1/.test(x.mime)) ? 1 : 0
+    if (!cur || pref(f) > pref(cur) || (pref(f) === pref(cur) && f.bitrate > cur.bitrate)) best.set(f.height, f)
+  }
+  return [...best.values()]
+    .sort((a, b) => b.height - a.height)
+    .map((v) => {
+      const webm = /webm/.test(v.mime)
+      const audio = s.formats.filter((f) => f.audio && !f.video && (webm ? /webm/.test(f.mime) : /mp4/.test(f.mime))).sort((a, b) => b.bitrate - a.bitrate)[0]
+      return { height: v.height, video: v, audio, ext: webm ? 'webm' : 'mp4' }
+    })
+    .filter((o) => o.audio)
 }

@@ -5,16 +5,17 @@ import { Avatar } from '../components/Layout'
 import { ErrorBox } from '../components/ErrorBox'
 import { useAsync } from '../lib/useAsync'
 import { useAllSubs } from '../lib/useSubs'
-import { toggleLocalSub, useSettings } from '../lib/storage'
+import { toggleLocalSub, useSettings, useBlocked } from '../lib/storage'
 import { getSubscriptionFeed, splitShorts } from '../lib/youtube'
 
 export function Subscriptions() {
   const { all, google, loading } = useAllSubs()
   const settings = useSettings()
+  const blocked = useBlocked()
   const [tab, setTab] = useState<'feed' | 'channels'>('feed')
   const [force, setForce] = useState(0)
   const key = all.map((c) => c.id).join(',')
-  const feed = useAsync(() => (all.length ? getSubscriptionFeed(all, force > 0) : Promise.resolve([])), [key, force, settings.hideGaming])
+  const feed = useAsync(() => (all.length ? getSubscriptionFeed(all, force > 0) : Promise.resolve([])), [key, force, blocked.length])
 
   if (!all.length && !loading)
     return (

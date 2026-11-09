@@ -1,6 +1,7 @@
 package app.youfree;
 
 import android.content.Intent;
+import android.os.Bundle;
 import com.getcapacitor.BridgeActivity;
 import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginHandle;
@@ -10,6 +11,12 @@ import ee.forgr.capacitor.social.login.SocialLoginPlugin;
 
 // Transmet le retour de l'autorisation Google (accès Drive) au plugin de connexion.
 public class MainActivity extends BridgeActivity implements ModifiedMainActivityForSocialLoginPlugin {
+
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        registerPlugin(YoufreeDownloaderPlugin.class);
+        super.onCreate(savedInstanceState);
+    }
 
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
