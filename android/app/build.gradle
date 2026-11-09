@@ -16,6 +16,17 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    // Clé de signature fixe pour les APK de test : sans elle, chaque build GitHub
+    // génère une nouvelle clé et Android refuse d'installer la mise à jour par-dessus.
+    // Clé publique dans le dépôt = APK de test uniquement, pas pour une publication.
+    signingConfigs {
+        debug {
+            storeFile file('youfree-test.keystore')
+            storePassword 'youfree-test'
+            keyAlias 'youfree'
+            keyPassword 'youfree-test'
+        }
+    }
     buildTypes {
         release {
             minifyEnabled false
