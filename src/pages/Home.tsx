@@ -85,6 +85,15 @@ export function Home() {
 
 
   const subs = splitShorts(feed.data ?? [])
+  // Abonnements : 3 vidéos max par chaîne, chaînes en alternance, 12 au total (rangée compacte).
+  const subsMix = (() => {
+    const by = new Map<string, Video[]>()
+    subs.videos.forEach((v) => by.set(v.channelId, [...(by.get(v.channelId) ?? []), v]))
+    const lists = [...by.values()].map((l) => l.slice(0, 3))
+    const out: Video[] = []
+    for (let i = 0; i < 3; i++) for (const l of lists) if (l[i]) out.push(l[i])
+    return out.slice(0, 12)
+  })()
   // Pendant le chargement du nouveau tirage, on montre le précédent (mélangé) : affichage immédiat.
   const last = (() => {
     try {
@@ -116,12 +125,12 @@ export function Home() {
             <h2>Nouveautés de tes abonnements</h2>
             <Link to="/subscriptions">Tout voir</Link>
           </div>
-          {feed.error ? <ErrorBox error={feed.error} /> : !feed.data ? <Skeletons n={6} /> : (
-            <VideoGrid>
-              {subs.videos.slice(0, 12).map((v) => (
+          {feed.error ? <ErrorBox error={feed.error} /> : !feed.data ? <Skeletons n={3} /> : (
+            <div className="row">
+              {subsMix.map((v) => (
                 <VideoCard key={v.id} video={v} />
               ))}
-            </VideoGrid>
+            </div>
           )}
         </section>
       ),
