@@ -9,20 +9,27 @@ import { suggest } from '../lib/youtube'
 
 export function Logo({ compact = false }: { compact?: boolean }) {
   return (
-    <Link to="/" className="logo" aria-label="Accueil Youfree">
+    <Link to="/" className="logo" aria-label="Accueil Youtmusic">
       <svg viewBox="0 0 64 64" width="30" height="30" aria-hidden>
         <rect width="64" height="64" rx="18" fill="var(--accent)" />
         <circle cx="32" cy="32" r="16" fill="none" stroke="#fff" strokeWidth="5" />
         <path d="M28 24v16l12-8z" fill="#fff" />
       </svg>
-      {!compact && <span>Youfree</span>}
+      {!compact && <span>Youtmusic</span>}
     </Link>
   )
 }
 
 /** Applique le thème choisi (sombre par défaut) sur <html>. */
 export function useTheme() {
-  const { theme, accent, density } = useSettings()
+  const { theme, accent, density, textScale, animations, radius, tabLabels } = useSettings()
+  useEffect(() => {
+    const d = document.documentElement
+    d.style.fontSize = `${textScale}%`
+    d.dataset.anim = animations ? 'on' : 'off'
+    d.dataset.radius = radius
+    d.dataset.labels = tabLabels ? 'on' : 'off'
+  }, [textScale, animations, radius, tabLabels])
   useEffect(() => {
     const st = document.documentElement.style
     st.setProperty('--accent', accent)
@@ -147,6 +154,13 @@ export function Layout({ children }: { children: ReactNode }) {
   const nav = NAV.filter((n) => showShorts || n.to !== '/shorts')
 
   useEffect(() => setSearching(false), [pathname])
+  // Onglet choisi au démarrage.
+  const navigate = useNavigate()
+  const { startTab } = useSettings()
+  useEffect(() => {
+    if (pathname === '/' && startTab !== '/') navigate(startTab, { replace: true })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   return (
     <div className={`app ${immersive ? 'immersive' : ''}`}>

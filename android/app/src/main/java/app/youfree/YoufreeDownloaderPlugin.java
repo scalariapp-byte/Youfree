@@ -24,8 +24,8 @@ import java.net.URL;
 import java.nio.ByteBuffer;
 
 /** Télécharge les flux vidéo et audio, les assemble sans réencodage et enregistre dans Téléchargements. */
-@CapacitorPlugin(name = "YoufreeDownloader")
-public class YoufreeDownloaderPlugin extends Plugin {
+@CapacitorPlugin(name = "YoutmusicDownloader")
+public class YoutmusicDownloaderPlugin extends Plugin {
 
     @PluginMethod
     public void download(PluginCall call) {
@@ -125,16 +125,16 @@ public class YoufreeDownloaderPlugin extends Plugin {
             ContentValues cv = new ContentValues();
             cv.put(MediaStore.Downloads.DISPLAY_NAME, name);
             cv.put(MediaStore.Downloads.MIME_TYPE, mime);
-            cv.put(MediaStore.Downloads.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS + "/Youfree");
+            cv.put(MediaStore.Downloads.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS + "/Youtmusic");
             Uri uri = getContext().getContentResolver().insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, cv);
             try (OutputStream os = getContext().getContentResolver().openOutputStream(uri); InputStream is = new FileInputStream(src)) {
                 byte[] b = new byte[1 << 16];
                 int n;
                 while ((n = is.read(b)) > 0) os.write(b, 0, n);
             }
-            return "Téléchargements/Youfree/" + name;
+            return "Téléchargements/Youtmusic/" + name;
         }
-        File dir = new File(getContext().getExternalFilesDir(Environment.DIRECTORY_MOVIES), "Youfree");
+        File dir = new File(getContext().getExternalFilesDir(Environment.DIRECTORY_MOVIES), "Youtmusic");
         dir.mkdirs();
         File dest = new File(dir, name);
         try (InputStream is = new FileInputStream(src); OutputStream os = new FileOutputStream(dest)) {

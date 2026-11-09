@@ -2,7 +2,7 @@ import type { CapacitorConfig } from '@capacitor/cli'
 
 const config: CapacitorConfig = {
   appId: 'app.youfree',
-  appName: 'Youfree',
+  appName: 'Youtmusic',
   webDir: 'dist',
   server: { androidScheme: 'https' },
   plugins: {

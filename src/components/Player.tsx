@@ -36,6 +36,10 @@ function DirectPlayer({ id, start, onEnded, onFail, loop, bare, paused, title = 
   const [s, setS] = useState<Streams | null>(null)
   const [src, setSrc] = useState('')
   const [panel, setPanel] = useState(false)
+  const [stats, setStats] = useState(settings.showStats)
+  const mountAt = useRef(performance.now())
+  const [marks, setMarks] = useState<Record<string, number>>({})
+  const mark = (k: string) => setMarks((m) => (m[k] ? m : { ...m, [k]: Math.round(performance.now() - mountAt.current) }))
   const [looping, setLooping] = useState(false)
   const [sleep, setSleep] = useState(0)
   useEffect(() => {
@@ -59,6 +63,7 @@ function DirectPlayer({ id, start, onEnded, onFail, loop, bare, paused, title = 
         // HLS si les flux directs plafonnent sous 480p (cas du client IOS).
         const low = !r.qualities.length || r.qualities[0].height < 480
         if (r.hls && low && !bare) r = { ...r, audio: undefined, qualities: [], video: r.hls }
+        mark('flux')
         setS(r)
         setSrc((r.qualities.find((q) => q.height <= settings.quality) ?? r.qualities[r.qualities.length - 1])?.url ?? r.video)
       },
@@ -92,7 +97,7 @@ function DirectPlayer({ id, start, onEnded, onFail, loop, bare, paused, title = 
     // Notification et contrôles système (sauf Shorts) ; la musique se met en pause.
     const media = () => (document.hidden ? audio : video)
     const announce = () =>
-      !bare && setNowPlaying({ title: title || 'Youfree', artist, artwork: `https://i.ytimg.com/vi/${id}/hqdefault.jpg` }, !media().paused, { toggle: () => (media().paused ? media().play() : media().pause()) })
+      !bare && setNowPlaying({ title: title || 'Youtmusic', artist, artwork: `https://i.ytimg.com/vi/${id}/hqdefault.jpg` }, !media().paused, { toggle: () => (media().paused ? media().play() : media().pause()) })
     const onPlay = () => (pauseMusic(), announce())
     video.addEventListener('play', onPlay)
     video.addEventListener('pause', announce)
@@ -133,7 +138,8 @@ function DirectPlayer({ id, start, onEnded, onFail, loop, bare, paused, title = 
         onClick={bare ? (e) => (e.currentTarget.paused ? e.currentTarget.play() : e.currentTarget.pause()) : undefined}
         loop={loop || looping}
         style={{ objectFit: bare ? 'cover' : settings.fit }}
-        onLoadedMetadata={(e) => (e.currentTarget.playbackRate = settings.speed)}
+        onLoadedMetadata={(e) => ((e.currentTarget.playbackRate = settings.speed), mark('métadonnées'))}
+        onPlaying={() => mark('première image')}
         onEnded={() => (updatePosition(id, 0), onEnded?.())}
         onError={() => onFail('lecture refusée par le serveur vidéo')}
       />
@@ -142,6 +148,25 @@ function DirectPlayer({ id, start, onEnded, onFail, loop, bare, paused, title = 
         <button className="player-gear" onClick={() => setPanel(!panel)} aria-label="Réglages de lecture">
           <Icon name="settings" size={20} />
         </button>
+      )}
+      {stats && (
+        <div className="stats" onClick={() => setStats(false)}>
+          <strong>Statistiques de lecture</strong>
+          <span>client : {s.client}</span>
+          {s.timings.map((t) => (
+            <span key={t}>{t}</span>
+          ))}
+          {Object.entries(marks).map(([k, ms]) => (
+            <span key={k}>
+              {k} : {ms} ms
+            </span>
+          ))}
+          <span>
+            source : {src === s.hls ? 'HLS' : `${s.qualities.find((q) => q.url === src)?.height ?? s.height}p`} · {s.formats.find((f) => f.url === src)?.mime.split(';')[0] ?? ''}{' '}
+            {s.formats.find((f) => f.url === src)?.mime.match(/codecs="([^".]+)/)?.[1] ?? ''}
+          </span>
+          <span>{marks['première image'] ? (marks['première image'] > 3000 ? '⚠ démarrage lent : ' + (marks['flux'] > 1500 ? 'récupération des flux (réseau / YouTube)' : 'chargement de la vidéo (débit)') : '✓ démarrage rapide') : '…'}</span>
+        </div>
       )}
       {panel && (
         <div className="player-panel" onClick={(e) => e.stopPropagation()}>
@@ -191,6 +216,9 @@ function DirectPlayer({ id, start, onEnded, onFail, loop, bare, paused, title = 
             {'pictureInPictureEnabled' in document && (
               <button onClick={() => v.current?.requestPictureInPicture?.().catch(() => {})}>Mini-lecteur</button>
             )}
+            <button className={stats ? 'on' : ''} onClick={() => setStats(!stats)}>
+              <Icon name="chart" size={16} /> Statistiques
+            </button>
             <button onClick={() => v.current && (v.current.currentTime -= 10)}>−10 s</button>
             <button onClick={() => v.current && (v.current.currentTime += 10)}>+10 s</button>
           </div>

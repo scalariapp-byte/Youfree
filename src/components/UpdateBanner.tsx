@@ -3,8 +3,8 @@ import { useEffect, useState } from 'react'
 import { isNative } from '../lib/nativeFetch'
 
 const BUILD = Number(import.meta.env.VITE_BUILD ?? 0)
-const RELEASE_API = 'https://api.github.com/repos/scalariapp-byte/Youfree/releases/tags/android-latest'
-const APK = 'https://github.com/scalariapp-byte/Youfree/releases/download/android-latest/youfree.apk'
+const RELEASE_API = 'https://api.github.com/repos/scalariapp-byte/Youtmusic/releases/tags/android-latest'
+const APK = 'https://github.com/scalariapp-byte/Youtmusic/releases/download/android-latest/youfree.apk'
 
 export function UpdateBanner() {
   const [latest, setLatest] = useState<{ build: number; notes: string } | null>(null)
@@ -53,7 +53,7 @@ export function UpdateBanner() {
     return (
       <div className="update-banner ok" onClick={() => setHidden(true)}>
         <div>
-          <strong>Youfree est à jour</strong>
+          <strong>Youtmusic est à jour</strong>
           <small>Version {BUILD} installée.</small>
         </div>
         <button className="icon-btn small" aria-label="Fermer">

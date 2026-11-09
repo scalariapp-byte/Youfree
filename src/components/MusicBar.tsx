@@ -1,12 +1,14 @@
 import { useState } from 'react'
 import { getQueue, next, playAt, prev, seek, stopMusic, toggle, useMusic } from '../lib/music'
 import { duration } from '../lib/format'
+import { AddToPlaylist } from './AddToPlaylist'
 import { Icon } from './Icon'
 
 /** Mini-lecteur musique, au-dessus de la barre d'onglets, sur toutes les pages. */
 export function MusicBar() {
   const m = useMusic()
   const [full, setFull] = useState(false)
+  const [add, setAdd] = useState(false)
   if (!m.track) return null
   if (full) {
     const { queue, index } = getQueue()
@@ -18,7 +20,11 @@ export function MusicBar() {
         <div className="np-art" style={{ backgroundImage: `url(${m.track.thumbnail})` }} />
         <img className="np-cover" src={m.track.thumbnail.replace(/=w\d+-h\d+/, '=w720-h720')} alt="" />
         <h2>{m.track.title}</h2>
-        <p className="muted">{m.track.artist}</p>
+        <p className="muted">{m.error || m.track.artist}</p>
+        <button className="btn ghost small" onClick={() => setAdd(true)}>
+          <Icon name="plus" size={16} /> Ajouter à une playlist
+        </button>
+        <AddToPlaylist track={m.track} open={add} onClose={() => setAdd(false)} />
         <input className="np-seek" type="range" min={0} max={m.duration || 1} step={0.5} value={m.time} onChange={(e) => seek(Number(e.target.value))} />
         <div className="np-times">
           <span>{duration(Math.floor(m.time)) || '0:00'}</span>
@@ -58,7 +64,7 @@ export function MusicBar() {
       <img src={m.track.thumbnail} alt="" />
       <span className="music-meta" onClick={() => setFull(true)}>
         <strong>{m.track.title}</strong>
-        <small>{m.loading ? 'Chargement…' : m.track.artist}</small>
+        <small className={m.error ? 'err' : ''}>{m.error || (m.loading ? 'Chargement…' : m.track.artist)}</small>
       </span>
       <button className="icon-btn" onClick={prev} aria-label="Précédent">
         <Icon name="back" />

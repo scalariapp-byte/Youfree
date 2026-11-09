@@ -1,4 +1,4 @@
-// Sauvegarde des données Youfree (abonnements, historique, « Plus tard », réglages) dans
+// Sauvegarde des données Youtmusic (abonnements, historique, « Plus tard », réglages) dans
 // l'espace privé de l'appli sur le Google Drive de l'utilisateur (dossier appDataFolder).
 // Aucun accès au compte YouTube.
 import { SocialLogin } from '@capgo/capacitor-social-login'

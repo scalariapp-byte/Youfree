@@ -7,7 +7,7 @@ interface DownloaderPlugin {
   download(o: { video: string; audio: string; title: string; ext: string }): Promise<{ path: string }>
   addListener(e: 'progress', f: (p: { percent: number; step: string }) => void): Promise<{ remove: () => void }>
 }
-const Downloader = registerPlugin<DownloaderPlugin>('YoufreeDownloader')
+const Downloader = registerPlugin<DownloaderPlugin>('YoutmusicDownloader')
 
 export async function listQualities(id: string) {
   return downloadOptions(await getStreams(id))

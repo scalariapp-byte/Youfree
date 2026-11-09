@@ -1,3 +1,4 @@
+import { INTERESTS } from './interests'
 // Langue des vidéos : région YouTube, mots-clés des thèmes, et priorité aux vidéos dans cette langue.
 export const LANGS: { code: string; label: string; flag: string; region: string }[] = [
   { code: 'fr', label: 'Français', flag: '🇫🇷', region: 'FR' },
@@ -42,9 +43,12 @@ const OLD: Record<string, string> = { '10': 'music', '25': 'news', '28': 'scienc
 export const themeKey = (k?: string) => (k ? OLD[k] ?? k : 'all')
 
 export function themeQuery(lang: string, key?: string, shorts = false) {
-  const row = T.find((t) => t[0] === themeKey(key)) ?? T[0]
-  const w = row[2].split('|')[IDX[lang] ?? 0]
-  return shorts ? (row[0] === 'all' ? 'shorts' : `${w} shorts`) : w
+  const k = themeKey(key)
+  const row = T.find((t) => t[0] === k)
+  const x = row ? undefined : INTERESTS.find((i) => i.key === k)
+  const w = row ? row[2].split('|')[IDX[lang] ?? 0] : x ? (lang === 'fr' ? x.fr : x.en) : T[0][2].split('|')[IDX[lang] ?? 0]
+  if (!row && !x) return shorts ? 'shorts' : w
+  return shorts ? (k === 'all' ? 'shorts' : `${w} shorts`) : w
 }
 
 // Détection rapide de langue par mots fréquents : sert à remonter les vidéos dans la langue choisie.

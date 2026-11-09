@@ -31,8 +31,13 @@ function ContinueWatching() {
 }
 
 /** « Pour toi » : vidéos populaires de chaque centre d'intérêt, entremêlées. */
+// Rotation quotidienne parmi les centres d'intérêt (5 par jour), pour varier sans tout charger.
+function pickToday(interests: string[], n: number) {
+  const day = Math.floor(Date.now() / 86400000)
+  return [...interests].sort((a, b) => ((a.charCodeAt(0) * 31 + a.length * day) % 97) - ((b.charCodeAt(0) * 31 + b.length * day) % 97)).slice(0, n)
+}
 async function forYou(interests: string[]) {
-  const lists = await Promise.all(interests.slice(0, 4).map((c) => getTrending(c).then((r) => r.videos, () => [])))
+  const lists = await Promise.all(pickToday(interests, 5).map((c) => getTrending(c).then((r) => r.videos, () => [])))
   const out = []
   for (let i = 0; i < 30; i++) for (const l of lists) if (l[i]) out.push(l[i])
   return { videos: out, next: undefined }
@@ -48,7 +53,7 @@ export function Home() {
   const feed = useAsync(() => (all.length ? getSubscriptionFeed(all) : Promise.resolve([])), [key, blocked.length], `feed:${key}`)
   const mix = !cat && settings.interests.length > 0
   const popular = useAsync(() => (mix ? forYou(settings.interests) : getTrending(cat)), [cat, settings.region, blocked.length], `pop:${settings.lang}:${settings.region}:${cat ?? ''}:${mix ? settings.interests.join('.') : ''}`)
-  const shorts = useAsync(() => (settings.showShorts ? getShorts(cat) : Promise.resolve({ videos: [], next: undefined })), [cat, settings.showShorts, settings.region], `sh:${settings.lang}:${settings.region}:${cat ?? ''}:${settings.showShorts}`)
+  const shorts = useAsync(() => (settings.showShorts ? getShorts(cat ?? pickToday(settings.interests, 1)[0]) : Promise.resolve({ videos: [], next: undefined })), [cat, settings.showShorts, settings.region], `sh:${settings.lang}:${settings.region}:${cat ?? pickToday(settings.interests, 1)[0] ?? ''}:${settings.showShorts}`)
 
   if (!isAvailable()) return <Onboarding />
 
@@ -56,14 +61,11 @@ export function Home() {
   const pop = splitShorts(onlyLang(popular.data?.videos ?? [], settings.lang))
   const shelf = settings.showShorts ? onlyLang([...subs.shorts, ...pop.shorts, ...(shorts.data?.videos ?? [])], settings.lang).filter((v, i, a) => a.findIndex((x) => x.id === v.id) === i) : []
 
-  return (
-    <div className="page">
-      {!cat && settings.sections.continue && <ContinueWatching />}
-
-      {settings.sections.shorts && shelf.length > 0 && <ShortsShelf shorts={shelf} />}
-
-      {!cat && settings.sections.subs && (all.length > 0 || loading) && (
-        <section>
+  const blocks: Record<string, React.ReactNode> = {
+    continue: !cat && settings.sections.continue && <ContinueWatching key="c" />,
+    shorts: settings.sections.shorts && shelf.length > 0 && <ShortsShelf key="s" shorts={shelf} />,
+    subs: !cat && settings.sections.subs && (all.length > 0 || loading) && (
+        <section key="n">
           <div className="section-head">
             <h2>Nouveautés de tes abonnements</h2>
             <Link to="/subscriptions">Tout voir</Link>
@@ -76,9 +78,8 @@ export function Home() {
             </VideoGrid>
           )}
         </section>
-      )}
-
-      {(cat || settings.sections.popular) && <section>
+      ),
+    popular: (cat || settings.sections.popular) && <section key="p">
         <div className="section-head">
           <h2>{cat ? 'Populaire dans ce thème' : mix ? 'Pour toi' : 'Populaire en ce moment'}</h2>
           <Link to="/trending">Explorer</Link>
@@ -90,7 +91,7 @@ export function Home() {
             ))}
           </VideoGrid>
         )}
-      </section>}
-    </div>
-  )
+      </section>,
+  }
+  return <div className="page">{settings.homeOrder.map((k) => blocks[k])}</div>
 }

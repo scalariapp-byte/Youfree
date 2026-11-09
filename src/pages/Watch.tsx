@@ -66,9 +66,9 @@ export function Watch() {
 
   useEffect(() => {
     if (v) recordWatch(toStored(v))
-    if (v) document.title = `${decode(v.title)} · Youfree`
+    if (v) document.title = `${decode(v.title)} · Youtmusic`
     return () => {
-      document.title = 'Youfree'
+      document.title = 'Youtmusic'
     }
   }, [v])
 

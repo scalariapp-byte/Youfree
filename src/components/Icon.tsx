@@ -27,6 +27,9 @@ const PATHS: Record<string, string> = {
   pause: 'M7 4h3v16H7zM14 4h3v16h-3z',
   fwd: 'M9 5l7 7-7 7',
   music: 'M9 18V5l12-2v13M9 18a3 3 0 1 1-6 0 3 3 0 0 1 6 0zm12-2a3 3 0 1 1-6 0 3 3 0 0 1 6 0z',
+  plus: 'M12 5v14M5 12h14',
+  trash: 'M4 7h16M9 7V4h6v3m-8 0 1 13h8l1-13',
+  chart: 'M4 20V10M10 20V4M16 20v-7M22 20H2',
   user: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zm-8 9a8 8 0 0 1 16 0',
 }
 

@@ -2,7 +2,7 @@
 import { useState } from 'react'
 import { LANGS } from '../lib/i18n'
 import { saveSettings, useSettings } from '../lib/storage'
-import { THEMES } from '../components/Themes'
+import { InterestPicker } from '../components/InterestPicker'
 import { Icon } from '../components/Icon'
 
 const STEPS = 4
@@ -13,7 +13,6 @@ export function Welcome() {
   const [dir, setDir] = useState(1)
   const [interests, setInterests] = useState<string[]>(s.interests)
   const go = (n: number) => (setDir(n > step ? 1 : -1), setStep(n))
-  const toggle = (id: string) => setInterests((l) => (l.includes(id) ? l.filter((x) => x !== id) : [...l, id]))
   const finish = () => saveSettings({ interests, onboarded: true })
 
   return (
@@ -40,7 +39,7 @@ export function Welcome() {
               </svg>
             </div>
             <h1>
-              Bienvenue sur <span className="grad">Youfree</span>
+              Bienvenue sur <span className="grad">Youtmusic</span>
             </h1>
             <p className="lead">Tes vidéos, sans pub ni compte. Réglons l’essentiel en 30 secondes.</p>
             <ul className="perks">
@@ -80,15 +79,8 @@ export function Welcome() {
         {step === 2 && (
           <>
             <h2>Qu’est-ce qui t’intéresse ?</h2>
-            <p className="lead">Choisis-en quelques-uns : ton accueil sera composé avec.</p>
-            <div className="interest-grid">
-              {THEMES.filter(([, id]) => id !== 'all').map(([label, id], i) => (
-                <button key={id} style={{ ['--i' as string]: Math.min(i, 12) }} className={`interest ${interests.includes(id) ? 'on' : ''}`} onClick={() => toggle(id)}>
-                  {interests.includes(id) && <Icon name="check" size={16} />}
-                  {label}
-                </button>
-              ))}
-            </div>
+            <p className="lead">Sois précis : ton accueil et tes Shorts seront composés avec. Modifiable dans les paramètres.</p>
+            <InterestPicker value={interests} onChange={setInterests} />
           </>
         )}
 

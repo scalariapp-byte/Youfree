@@ -21,7 +21,7 @@ public class PlaybackService extends Service {
             BackgroundPlaybackPlugin.emit(action);
             return START_NOT_STICKY;
         }
-        String title = intent != null ? intent.getStringExtra("title") : "Youfree";
+        String title = intent != null ? intent.getStringExtra("title") : "Youtmusic";
         String text = intent != null ? intent.getStringExtra("text") : "";
         boolean playing = intent == null || intent.getBooleanExtra("playing", true);
         NotificationManager nm = getSystemService(NotificationManager.class);

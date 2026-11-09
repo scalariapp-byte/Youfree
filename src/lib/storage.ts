@@ -16,6 +16,14 @@ export interface Settings {
   density: 'comfort' | 'compact'
   sections: { continue: boolean; shorts: boolean; subs: boolean; popular: boolean }
   autoNext: boolean
+  textScale: number
+  animations: boolean
+  radius: 'round' | 'square'
+  homeOrder: string[]
+  startTab: string
+  tabLabels: boolean
+  showStats: boolean
+  audioQuality: 'high' | 'low'
   player: 'direct' | 'nocookie' | 'invidious'
   invidiousInstance: string
 }
@@ -55,6 +63,14 @@ const DEFAULT_SETTINGS: Settings = {
   density: 'comfort',
   sections: { continue: true, shorts: true, subs: true, popular: true },
   autoNext: false,
+  textScale: 100,
+  animations: true,
+  radius: 'round',
+  homeOrder: ['continue', 'shorts', 'subs', 'popular'],
+  startTab: '/',
+  tabLabels: true,
+  showStats: false,
+  audioQuality: 'high',
   player: 'direct',
   invidiousInstance: 'https://yewtu.be',
 }
@@ -153,6 +169,33 @@ export function toggleLike(v: StoredVideo) {
   write('liked', l.some((x) => x.id === v.id) ? l.filter((x) => x.id !== v.id) : [v, ...l])
 }
 
+// ---- Playlists musique
+export interface PlaylistTrack {
+  id: string
+  title: string
+  artist: string
+  thumbnail: string
+}
+export interface LocalPlaylist {
+  id: string
+  name: string
+  tracks: PlaylistTrack[]
+}
+export const getPlaylists = () => read<LocalPlaylist[]>('playlists', [])
+export const usePlaylists = () => useSyncExternalStore(subscribe, getPlaylists)
+export const createPlaylist = (name: string) => {
+  const p = { id: Date.now().toString(36), name, tracks: [] }
+  write('playlists', [...getPlaylists(), p])
+  return p
+}
+export const deletePlaylist = (id: string) => write('playlists', getPlaylists().filter((p) => p.id !== id))
+export function toggleInPlaylist(pid: string, t: PlaylistTrack) {
+  write(
+    'playlists',
+    getPlaylists().map((p) => (p.id !== pid ? p : { ...p, tracks: p.tracks.some((x) => x.id === t.id) ? p.tracks.filter((x) => x.id !== t.id) : [...p.tracks, t] })),
+  )
+}
+
 // ---- Chaînes masquées
 export const getBlocked = () => read<LocalChannel[]>('blocked', [])
 export const useBlocked = () => useSyncExternalStore(subscribe, getBlocked)
@@ -164,7 +207,7 @@ export function toggleBlock(c: LocalChannel) {
 // ---- Export / import complet
 export function exportAll() {
   return JSON.stringify(
-    { version: 1, settings: getSettings(), history: getHistory(), watchLater: getWatchLater(), subs: getLocalSubs(), liked: getLiked(), blocked: getBlocked() },
+    { version: 1, settings: getSettings(), history: getHistory(), watchLater: getWatchLater(), subs: getLocalSubs(), liked: getLiked(), blocked: getBlocked(), playlists: getPlaylists() },
     null,
     2,
   )
@@ -183,6 +226,7 @@ export function mergeAll(json: string) {
   write('watchLater', [...later.values()])
   if (d.subs) importLocalSubs(d.subs)
   if (d.liked) write('liked', [...new Map([...d.liked, ...getLiked()].map((v: StoredVideo) => [v.id, v])).values()])
+  if (d.playlists) write('playlists', [...new Map([...d.playlists, ...getPlaylists()].map((p: LocalPlaylist) => [p.id, p])).values()])
   if (d.blocked) write('blocked', [...new Map([...d.blocked, ...getBlocked()].map((c: LocalChannel) => [c.id, c])).values()])
   if (d.settings) {
     const { googleClientId: _g, ...rest } = d.settings

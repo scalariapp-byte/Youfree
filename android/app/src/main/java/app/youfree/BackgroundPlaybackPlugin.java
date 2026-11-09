@@ -28,7 +28,7 @@ public class BackgroundPlaybackPlugin extends Plugin {
     @PluginMethod
     public void update(PluginCall call) {
         Intent i = new Intent(getContext(), PlaybackService.class).setAction("show");
-        i.putExtra("title", call.getString("title", "Youfree"));
+        i.putExtra("title", call.getString("title", "Youtmusic"));
         i.putExtra("text", call.getString("text", ""));
         i.putExtra("playing", call.getBoolean("playing", true));
         try {

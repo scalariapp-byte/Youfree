@@ -18,6 +18,8 @@ export interface Streams {
   client: string
   /** Flux HLS (vidéo + son, qualité adaptative jusqu'en 1080p et plus) si le lecteur sait le lire. */
   hls?: string
+  /** Durée de chaque tentative de récupération des flux (diagnostic de lenteur). */
+  timings: string[]
 }
 
 export const canHls = () => !!document.createElement('video').canPlayType('application/vnd.apple.mpegurl')
@@ -29,11 +31,15 @@ export let lastStreamError = ''
 async function fetchStreams(id: string): Promise<Streams> {
   const yt = await (await import('./innertube')).getClient()
   const errors: string[] = []
+  const timings: string[] = []
+  const t0 = performance.now()
+  const lap = (label: string) => timings.push(`${label} : ${Math.round(performance.now() - t0)} ms`)
   const best = localStorage.getItem('youfree:client')
   const order = best ? [best, ...CLIENTS.filter((c) => c !== best)] : [...CLIENTS]
   for (const client of order as (typeof CLIENTS)[number][]) {
     try {
       const info: any = await yt.getBasicInfo(id, { client })
+      lap(`réponse ${client}`)
       const sd = info.streaming_data
       if (sd) localStorage.setItem('youfree:client', client)
       if (!sd) throw new Error(info.playability_status?.reason || info.playability_status?.status || 'pas de flux')
@@ -56,13 +62,14 @@ async function fetchStreams(id: string): Promise<Streams> {
       const qualities = [...byH.values()].sort((a, b) => b.height - a.height).map((f) => ({ height: f.height, url: f.url }))
       if (audio && qualities.length) {
         const pick = qualities.find((q) => q.height <= 720) ?? qualities[qualities.length - 1]
-        return { video: pick.url, audio: audio.url, height: pick.height, qualities, formats, client, hls }
+        return { video: pick.url, audio: audio.url, height: pick.height, qualities, formats, client, hls, timings }
       }
       const prog = formats.filter((f) => f.audio && f.video).sort((a, b) => b.height - a.height)[0]
       if (!prog && !hls) throw new Error('aucun format lisible')
-      return { video: prog?.url ?? hls!, height: prog?.height ?? 720, qualities: prog ? [{ height: prog.height, url: prog.url }] : [], formats, client, hls }
+      return { video: prog?.url ?? hls!, height: prog?.height ?? 720, qualities: prog ? [{ height: prog.height, url: prog.url }] : [], formats, client, hls, timings }
     } catch (e) {
       errors.push(`${client}: ${(e as Error).message}`)
+      lap(`échec ${client}`)
     }
   }
   lastStreamError = errors.join(' · ')

@@ -5,6 +5,9 @@ import { LANGS } from '../lib/i18n'
 import { cloudState, connect, disconnect, sync } from '../lib/cloud'
 import { isNative } from '../lib/nativeFetch'
 import { ago } from '../lib/format'
+import { Sheet } from '../components/Sheet'
+import { Icon } from '../components/Icon'
+import { InterestPicker } from '../components/InterestPicker'
 
 const REGIONS = ['FR', 'BE', 'CH', 'CA', 'LU', 'MA', 'DZ', 'TN', 'SN', 'US', 'GB', 'DE', 'ES', 'IT', 'PT', 'BR', 'MX']
 
@@ -32,7 +35,7 @@ function BlockedSection() {
   const list = useBlocked()
   if (!list.length) return null
   return (
-    <section>
+    <section className="plain">
       <h2>Chaînes masquées</h2>
       {list.map((c) => (
         <div key={c.id + c.title} className="channel-row">
@@ -115,10 +118,38 @@ function CloudSection() {
   )
 }
 
+const Toggle = ({ on, set, label, hint }: { on: boolean; set: (v: boolean) => void; label: string; hint?: string }) => (
+  <div className="pref">
+    <span>
+      <strong>{label}</strong>
+      {hint && <small>{hint}</small>}
+    </span>
+    <button className={`switch ${on ? 'on' : ''}`} onClick={() => set(!on)} aria-label={label} />
+  </div>
+)
+
+function Choice<T extends string | number>({ value, set, options }: { value: T; set: (v: T) => void; options: [T, string][] }) {
+  return (
+    <div className="segmented wrap">
+      {options.map(([v, l]) => (
+        <button key={String(v)} className={value === v ? 'on' : ''} onClick={() => set(v)}>
+          {l}
+        </button>
+      ))}
+    </div>
+  )
+}
+
+const SECTION_LABELS: Record<string, string> = { continue: 'Reprendre', shorts: 'Shorts', subs: 'Nouveautés des abonnements', popular: 'Pour toi / Populaire' }
+
+type Pane = 'interests' | 'content' | 'home' | 'look' | 'play' | 'music' | 'cloud' | 'data' | 'help' | null
+
 export function Settings() {
   const s = useSettings()
   const subs = useLocalSubs()
+  const blocked = useBlocked()
   const [msg, setMsg] = useState('')
+  const [pane, setPane] = useState<Pane>(null)
 
   const onFile = (kind: 'takeout' | 'backup') => async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -138,137 +169,190 @@ export function Settings() {
     }
     e.target.value = ''
   }
+  const order = s.homeOrder.filter((k) => SECTION_LABELS[k])
+  const move = (i: number, d: number) => {
+    const o = [...order]
+    ;[o[i], o[i + d]] = [o[i + d], o[i]]
+    saveSettings({ homeOrder: o })
+  }
+
+  const MENU: [Pane, string, string, string][] = [
+    ['interests', 'music', 'Centres d’intérêt', `${s.interests.length} sélectionnés`],
+    ['content', 'search', 'Langue et contenu', `${LANGS.find((l) => l.code === s.lang)?.label ?? ''} · ${blocked.length} chaîne(s) masquée(s)`],
+    ['home', 'home', 'Accueil', 'Sections, ordre, onglet de démarrage'],
+    ['look', 'settings', 'Apparence', 'Thème, couleur, texte, animations'],
+    ['play', 'play', 'Lecture vidéo', 'Lecteur, qualité, vitesse, statistiques'],
+    ['music', 'music', 'Musique', 'Qualité audio'],
+    ['cloud', 'user', 'Sauvegarde Google', cloudState().email || 'Non connecté'],
+    ['data', 'download', 'Données', `${subs.length} abonnements · import / export`],
+    ['help', 'chart', 'Aide et diagnostic', `Version ${import.meta.env.VITE_BUILD ?? 'dev'}`],
+  ]
+  const title = MENU.find((m) => m[0] === pane)?.[2]
 
   return (
     <div className="page settings">
-      <h1>Réglages</h1>
-
-      <CloudSection />
-
-      <section>
-        <h2>Contenu</h2>
-        <label className="toggle">
-          <input type="checkbox" checked={s.showShorts} onChange={(e) => saveSettings({ showShorts: e.target.checked })} />
-          Afficher les Shorts (onglet dédié et étagères, séparés des vidéos classiques)
-        </label>
-        <p className="muted">Les jeux intégrés (Playables) et les publicités dans le flux n’existent pas dans Youfree.</p>
-      </section>
-
-      <section>
-        <h2>Personnalisation</h2>
-        <label>Couleur principale</label>
-        <div className="swatches">
-          {ACCENTS.map((c) => (
-            <button key={c} className={s.accent === c ? 'on' : ''} style={{ background: c }} onClick={() => saveSettings({ accent: c })} aria-label={c} />
-          ))}
-        </div>
-        <label>Taille des vignettes</label>
-        <div className="segmented">
-          <button className={s.density === 'comfort' ? 'on' : ''} onClick={() => saveSettings({ density: 'comfort' })}>Grandes</button>
-          <button className={s.density === 'compact' ? 'on' : ''} onClick={() => saveSettings({ density: 'compact' })}>Compactes</button>
-        </div>
-        <label>Sections de l’accueil</label>
-        {(
-          [
-            ['continue', 'Reprendre'],
-            ['shorts', 'Shorts'],
-            ['subs', 'Nouveautés des abonnements'],
-            ['popular', 'Pour toi / Populaire'],
-          ] as const
-        ).map(([k, l]) => (
-          <label key={k} className="toggle">
-            <input type="checkbox" checked={s.sections[k]} onChange={(e) => saveSettings({ sections: { ...s.sections, [k]: e.target.checked } })} /> {l}
-          </label>
+      <h1 className="page-title">Paramètres</h1>
+      <div className="settings-menu">
+        {MENU.map(([k, icon, label, hint]) => (
+          <button key={k} onClick={() => setPane(k)}>
+            <span className="sm-icon">
+              <Icon name={icon} size={20} />
+            </span>
+            <span className="sm-text">
+              <strong>{label}</strong>
+              <small>{hint}</small>
+            </span>
+            <Icon name="fwd" size={18} />
+          </button>
         ))}
-        <label className="toggle">
-          <input type="checkbox" checked={s.autoNext} onChange={(e) => saveSettings({ autoNext: e.target.checked })} /> Enchaîner automatiquement la vidéo suivante
-        </label>
-      </section>
+      </div>
 
-      <BlockedSection />
+      <Sheet open={!!pane} onClose={() => setPane(null)} title={title}>
+        <div className="pane">
+          {pane === 'interests' && <InterestPicker value={s.interests} onChange={(v) => saveSettings({ interests: v })} />}
 
-      <section>
-        <h2>Apparence</h2>
-        <div className="segmented">
-          {(['dark', 'light', 'system'] as const).map((t) => (
-            <button key={t} className={s.theme === t ? 'on' : ''} onClick={() => saveSettings({ theme: t })}>
-              {t === 'dark' ? 'Sombre' : t === 'light' ? 'Clair' : 'Système'}
-            </button>
-          ))}
+          {pane === 'content' && (
+            <>
+              <label>Langue des vidéos</label>
+              <div className="lang-grid">
+                {LANGS.map((l) => (
+                  <button key={l.code} className={`lang ${s.lang === l.code ? 'on' : ''}`} onClick={() => saveSettings({ lang: l.code, region: l.region })}>
+                    <span className="flag">{l.flag}</span>
+                    {l.label}
+                  </button>
+                ))}
+              </div>
+              <label>Région</label>
+              <select value={s.region} onChange={(e) => saveSettings({ region: e.target.value })}>
+                {REGIONS.map((r) => (
+                  <option key={r}>{r}</option>
+                ))}
+              </select>
+              <Toggle on={s.showShorts} set={(v) => saveSettings({ showShorts: v })} label="Shorts" hint="Onglet et rangées de Shorts" />
+              <BlockedSection />
+            </>
+          )}
+
+          {pane === 'home' && (
+            <>
+              <label>Sections et ordre</label>
+              {order.map((k, i) => (
+                <div key={k} className="pref">
+                  <span>
+                    <strong>{SECTION_LABELS[k]}</strong>
+                  </span>
+                  <div className="row-btns tight">
+                    <button className="icon-btn small" disabled={i === 0} onClick={() => move(i, -1)} aria-label="Monter">
+                      ↑
+                    </button>
+                    <button className="icon-btn small" disabled={i === order.length - 1} onClick={() => move(i, 1)} aria-label="Descendre">
+                      ↓
+                    </button>
+                    <button
+                      className={`switch ${s.sections[k as keyof typeof s.sections] ? 'on' : ''}`}
+                      onClick={() => saveSettings({ sections: { ...s.sections, [k]: !s.sections[k as keyof typeof s.sections] } })}
+                      aria-label={SECTION_LABELS[k]}
+                    />
+                  </div>
+                </div>
+              ))}
+              <label>Onglet au démarrage</label>
+              <Choice value={s.startTab} set={(v) => saveSettings({ startTab: v })} options={[['/', 'Accueil'], ['/shorts', 'Shorts'], ['/music', 'Musique'], ['/subscriptions', 'Abonnements']]} />
+              <label>Taille des vignettes</label>
+              <Choice value={s.density} set={(v) => saveSettings({ density: v })} options={[['comfort', 'Grandes'], ['compact', 'Compactes']]} />
+            </>
+          )}
+
+          {pane === 'look' && (
+            <>
+              <label>Thème</label>
+              <Choice value={s.theme} set={(v) => saveSettings({ theme: v })} options={[['dark', 'Sombre'], ['light', 'Clair'], ['system', 'Système']]} />
+              <label>Couleur principale</label>
+              <div className="swatches">
+                {ACCENTS.map((c) => (
+                  <button key={c} className={s.accent === c ? 'on' : ''} style={{ background: c }} onClick={() => saveSettings({ accent: c })} aria-label={c} />
+                ))}
+              </div>
+              <label>Taille du texte</label>
+              <Choice value={s.textScale} set={(v) => saveSettings({ textScale: v })} options={[[90, 'Petit'], [100, 'Normal'], [110, 'Grand'], [120, 'Très grand']]} />
+              <label>Coins</label>
+              <Choice value={s.radius} set={(v) => saveSettings({ radius: v })} options={[['round', 'Arrondis'], ['square', 'Droits']]} />
+              <Toggle on={s.animations} set={(v) => saveSettings({ animations: v })} label="Animations" />
+              <Toggle on={s.tabLabels} set={(v) => saveSettings({ tabLabels: v })} label="Noms sous les onglets" />
+            </>
+          )}
+
+          {pane === 'play' && (
+            <>
+              <label>Lecteur</label>
+              <Choice
+                value={s.player}
+                set={(v) => saveSettings({ player: v })}
+                options={[['direct', 'Sans pub'], ['nocookie', 'YouTube intégré'], ['invidious', 'Invidious']]}
+              />
+              {s.player === 'direct' && !canUseLocal() && <p className="muted">Lecture sans pub : application Android uniquement.</p>}
+              {s.player === 'invidious' && <input value={s.invidiousInstance} onChange={(e) => saveSettings({ invidiousInstance: e.target.value })} placeholder="https://…" />}
+              <label>Qualité préférée</label>
+              <Choice value={s.quality} set={(v) => saveSettings({ quality: v })} options={[[360, '360p'], [480, '480p'], [720, '720p'], [1080, '1080p'], [2160, '4K']]} />
+              <label>Vitesse par défaut</label>
+              <Choice value={s.speed} set={(v) => saveSettings({ speed: v })} options={[[0.75, '0,75×'], [1, '1×'], [1.25, '1,25×'], [1.5, '1,5×'], [2, '2×']]} />
+              <label>Image</label>
+              <Choice value={s.fit} set={(v) => saveSettings({ fit: v })} options={[['contain', 'Ajuster'], ['cover', 'Remplir']]} />
+              <Toggle on={s.autoNext} set={(v) => saveSettings({ autoNext: v })} label="Enchaîner la vidéo suivante" />
+              <Toggle on={s.showStats} set={(v) => saveSettings({ showStats: v })} label="Statistiques de lecture" hint="Affiche ce qui ralentit le démarrage" />
+            </>
+          )}
+
+          {pane === 'music' && (
+            <>
+              <label>Qualité audio</label>
+              <Choice value={s.audioQuality} set={(v) => saveSettings({ audioQuality: v })} options={[['high', 'Haute'], ['low', 'Économie de données']]} />
+            </>
+          )}
+
+          {pane === 'cloud' && <CloudSection />}
+
+          {pane === 'data' && (
+            <div className="row-btns">
+              <label className="btn ghost">
+                Importer Google Takeout
+                <input type="file" accept=".csv" hidden onChange={onFile('takeout')} />
+              </label>
+              <button className="btn ghost" onClick={() => download('youtmusic-sauvegarde.json', exportAll())}>
+                Exporter une sauvegarde
+              </button>
+              <label className="btn ghost">
+                Restaurer une sauvegarde
+                <input type="file" accept=".json" hidden onChange={onFile('backup')} />
+              </label>
+              <button
+                className="btn ghost"
+                onClick={() => {
+                  Object.keys(localStorage)
+                    .filter((k) => k.startsWith('youfree:cache:'))
+                    .forEach((k) => localStorage.removeItem(k))
+                  setMsg('Cache vidé.')
+                }}
+              >
+                Vider le cache
+              </button>
+            </div>
+          )}
+
+          {pane === 'help' && (
+            <div className="row-btns">
+              <a href="#/diagnostic" className="btn ghost">
+                Diagnostic
+              </a>
+              <button className="btn ghost" onClick={() => saveSettings({ onboarded: false })}>
+                Revoir l’accueil
+              </button>
+              <p className="muted version">Youtmusic · version {import.meta.env.VITE_BUILD ?? 'dev'}</p>
+            </div>
+          )}
         </div>
-      </section>
-
-      <section>
-        <h2>Lecture</h2>
-        <label>
-          Langue des vidéos
-          <select value={s.lang} onChange={(e) => saveSettings({ lang: e.target.value, region: LANGS.find((l) => l.code === e.target.value)?.region ?? s.region })}>
-            {LANGS.map((l) => (
-              <option key={l.code} value={l.code}>
-                {l.flag} {l.label}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label>
-          Région des tendances
-          <select value={s.region} onChange={(e) => saveSettings({ region: e.target.value })}>
-            {REGIONS.map((r) => (
-              <option key={r}>{r}</option>
-            ))}
-          </select>
-        </label>
-        <label className="toggle">
-          <input type="radio" name="player" checked={s.player === 'direct'} disabled={!canUseLocal()} onChange={() => saveSettings({ player: 'direct' })} />
-          Lecteur Youfree sans pub (le téléphone lit les flux directement ; app Android)
-        </label>
-        <label className="toggle">
-          <input type="radio" name="player" checked={s.player === 'nocookie'} onChange={() => saveSettings({ player: 'nocookie' })} />
-          Lecteur YouTube sans cookies (fiable, reprise de lecture ; YouTube peut encore insérer une pub sur certaines vidéos)
-        </label>
-        <label className="toggle">
-          <input type="radio" name="player" checked={s.player === 'invidious'} onChange={() => saveSettings({ player: 'invidious' })} />
-          Lecteur Invidious (zéro pub, mais dépend d’un serveur tiers parfois lent ou hors ligne)
-        </label>
-        {s.player === 'invidious' && (
-          <label>
-            Instance Invidious
-            <input value={s.invidiousInstance} onChange={(e) => saveSettings({ invidiousInstance: e.target.value })} placeholder="https://…" />
-          </label>
-        )}
-      </section>
-
-      <section>
-        <h2>Aide</h2>
-        <div className="row-btns">
-          <a href="#/diagnostic" className="btn ghost">
-            Diagnostic
-          </a>
-          <button className="btn ghost" onClick={() => saveSettings({ onboarded: false })}>
-            Revoir l’accueil
-          </button>
-        </div>
-      </section>
-
-      <section>
-        <h2>Données locales</h2>
-        <p className="muted">{subs.length} abonnements locaux. Historique et listes restent dans ce navigateur.</p>
-        <div className="row-btns">
-          <label className="btn ghost">
-            Importer Google Takeout (subscriptions.csv)
-            <input type="file" accept=".csv" hidden onChange={onFile('takeout')} />
-          </label>
-          <button className="btn ghost" onClick={() => download('youfree-sauvegarde.json', exportAll())}>
-            Exporter une sauvegarde
-          </button>
-          <label className="btn ghost">
-            Restaurer une sauvegarde
-            <input type="file" accept=".json" hidden onChange={onFile('backup')} />
-          </label>
-        </div>
-      </section>
-      <p className="muted version">Youfree · version {import.meta.env.VITE_BUILD ?? 'dev'}</p>
-      {msg && <p className="toast">{msg}</p>}
+      </Sheet>
+      {msg && <p className="toast" onClick={() => setMsg('')}>{msg}</p>}
     </div>
   )
 }

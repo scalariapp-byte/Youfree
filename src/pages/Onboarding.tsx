@@ -1,8 +1,8 @@
 import { Logo } from '../components/Layout'
 
-const APK_URL = 'https://github.com/scalariapp-byte/Youfree/releases/download/android-latest/youfree.apk'
+const APK_URL = 'https://github.com/scalariapp-byte/Youtmusic/releases/download/android-latest/youfree.apk'
 
-/** Affiché dans un navigateur : Youfree fonctionne dans l'application Android. */
+/** Affiché dans un navigateur : Youtmusic fonctionne dans l'application Android. */
 export function Onboarding() {
   return (
     <div className="page onboarding">
