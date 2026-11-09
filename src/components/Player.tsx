@@ -41,6 +41,7 @@ function DirectPlayer({ id, start, onEnded, onFail, loop, bare, paused, title = 
   const [audioSrc, setAudioSrc] = useState('')
   const readyFor = useRef('')
   const triedQ = useRef<string[]>([])
+  const triedA = useRef<string[]>([])
   const [stats, setStats] = useState(settings.showStats)
   const mountAt = useRef(performance.now())
   const [marks, setMarks] = useState<Record<string, number>>({})
@@ -192,9 +193,14 @@ function DirectPlayer({ id, start, onEnded, onFail, loop, bare, paused, title = 
             // URL directe refusée : on télécharge la piste par la couche native.
             const fmt = s.formats.find((f) => f.url === s.audio)
             log(bare ? 'short' : 'vidéo', `${id} son refusé (${audioSrc.startsWith('blob:') ? 'blob' : 'direct'}) code=${a.current?.error?.code} ${fmt?.mime ?? ''}`)
-            if (!fmt || audioSrc.startsWith('blob:')) return onFail('piste audio refusée')
+            if (!fmt) return onFail('piste audio refusée')
             localStorage.setItem('youfree:audioBlob', '1')
-            audioBlobUrl(fmt.url, fmt.mime).then(setAudioSrc, (er) => (log('vidéo', `${id} blob KO : ${er.message}`), onFail('piste audio refusée')))
+            // Essaie les autres pistes audio (téléchargées par le téléphone) avant le repli.
+            const others = s.formats.filter((f) => f.audio && !f.video && !triedA.current.includes(f.url)).sort((x, y) => Math.abs(x.bitrate - 130000) - Math.abs(y.bitrate - 130000))
+            const next = audioSrc.startsWith('blob:') ? others.find((f) => f.url !== fmt.url) : fmt
+            if (!next || triedA.current.length >= 3) return onFail('piste audio refusée')
+            triedA.current.push(next.url)
+            audioBlobUrl(next.url, next.mime).then(setAudioSrc, (er) => (log('vidéo', `${id} blob KO : ${er.message}`), onFail('piste audio refusée')))
           }}
         />
       )}

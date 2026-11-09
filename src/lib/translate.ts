@@ -1,33 +1,42 @@
 // Traduction automatique (service public de Google Traduction, appelé par le téléphone).
+// Un texte par requête (POST), 6 en parallèle : fiable même pour les longs commentaires.
 import { localFetch } from './nativeFetch'
+import { log } from './log'
 
 const cache = new Map<string, string>()
-const SEP = '\n⁂\n'
 
-/** Traduit une liste de textes vers `lang` ; renvoie les originaux en cas d'échec. */
+async function one(text: string, lang: string): Promise<string> {
+  const key = lang + text
+  if (cache.has(key)) return cache.get(key)!
+  const r = await localFetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${lang}&dt=t`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
+    body: `q=${encodeURIComponent(text.slice(0, 4500))}`,
+  })
+  if (!r.ok) throw new Error(`HTTP ${r.status}`)
+  const data = JSON.parse(await r.text())
+  // Si le texte est déjà dans la langue voulue, on le garde tel quel.
+  const out = data[2] === lang ? text : (data[0] ?? []).map((x: unknown[]) => x[0]).join('')
+  cache.set(key, out || text)
+  return out || text
+}
+
+/** Traduit une liste de textes vers `lang` ; renvoie l'original pour ceux qui échouent. */
 export async function translateAll(texts: string[], lang: string): Promise<string[]> {
-  const out = texts.map((t) => cache.get(lang + t) ?? '')
-  const todo = texts.map((t, i) => [t, i] as const).filter(([t], i) => t.trim() && !out[i])
-  // Lots d'environ 3 500 caractères.
-  for (let k = 0; k < todo.length; ) {
-    const batch: (readonly [string, number])[] = []
-    let len = 0
-    while (k < todo.length && len + todo[k][0].length < 3500) (batch.push(todo[k]), (len += todo[k][0].length + 3), k++)
-    if (!batch.length) batch.push(todo[k++])
-    try {
-      const q = encodeURIComponent(batch.map(([t]) => t).join(SEP))
-      const r = await localFetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${lang}&dt=t&q=${q}`)
-      const data = JSON.parse(await r.text())
-      const full: string = (data[0] ?? []).map((x: unknown[]) => x[0]).join('')
-      const parts = full.split(/\s*⁂\s*/)
-      batch.forEach(([t, i], j) => {
-        const tr = (parts[j] ?? t).trim()
-        cache.set(lang + t, tr)
-        out[i] = tr
-      })
-    } catch {
-      batch.forEach(([t, i]) => (out[i] = t))
+  const out = texts.slice()
+  let i = 0
+  let failed = 0
+  const worker = async () => {
+    while (i < texts.length) {
+      const k = i++
+      if (!texts[k].trim()) continue
+      try {
+        out[k] = await one(texts[k], lang)
+      } catch (e) {
+        if (!failed++) log('traduction', `échec : ${(e as Error).message}`)
+      }
     }
   }
-  return out.map((t, i) => t || texts[i])
+  await Promise.all(Array.from({ length: Math.min(6, texts.length) }, worker))
+  return out
 }
