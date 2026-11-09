@@ -34,6 +34,18 @@ export const localFetch: typeof fetch = async (input, init) => {
     }
   }
   const res = await CapacitorHttp.request({ url: req.url, method: req.method, headers, data, responseType: 'text' })
-  const body = typeof res.data === 'string' ? res.data : JSON.stringify(res.data)
-  return new Response(body, { status: res.status, headers: res.headers })
+  const body = res.data == null ? '' : typeof res.data === 'string' ? res.data : JSON.stringify(res.data)
+  // On ne recopie que des en-têtes sûrs : Android en renvoie certains (ligne de statut,
+  // valeurs multiples) que le constructeur Response refuse.
+  const outHeaders = new Headers()
+  for (const [k, v] of Object.entries(res.headers ?? {})) {
+    if (!k || k === 'null' || /encoding|length/i.test(k)) continue
+    try {
+      outHeaders.set(k, String(v))
+    } catch {
+      /* en-tête invalide ignoré */
+    }
+  }
+  const status = res.status >= 200 && res.status <= 599 ? res.status : 500
+  return new Response([101, 204, 205, 304].includes(status) ? null : body, { status, headers: outHeaders })
 }

@@ -229,3 +229,9 @@ h3 { font-size: 1.05rem; }
   .account .btn { padding: 0 10px; font-size: .85rem; }
   .watch-side .card { grid-template-columns: 140px 1fr; }
 }
+
+/* ---------- Diagnostic */
+.diag pre { white-space: pre-wrap; overflow-wrap: anywhere; font-size: .8rem; margin: 8px 0 0; color: var(--muted); }
+.diag.ko { border-color: var(--danger); }
+.empty { padding: 18px 20px; border-radius: var(--radius); border: 1px dashed var(--border); color: var(--muted); }
+.empty a { color: var(--accent); font-weight: 600; }

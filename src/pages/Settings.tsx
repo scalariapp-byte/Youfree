@@ -75,6 +75,9 @@ export function Settings() {
               ? 'Mode sans clé disponible (serveur de développement).'
               : 'Mode sans clé indisponible dans un navigateur : le navigateur bloque les requêtes vers youtube.com. Installe l’application Android.'}
         </p>
+        <a href="#/diagnostic" className="btn ghost">
+          Diagnostic
+        </a>
       </section>
 
       <section>

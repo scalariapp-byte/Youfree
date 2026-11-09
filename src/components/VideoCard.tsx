@@ -1,4 +1,6 @@
+import { Children } from 'react'
 import { Link } from 'react-router-dom'
+import { Empty } from './ErrorBox'
 import type { Video } from '../lib/youtube'
 import { compact, duration, ago, decode } from '../lib/format'
 import { toggleWatchLater, useWatchLater, type StoredVideo } from '../lib/storage'
@@ -66,6 +68,7 @@ export function VideoCard({ video, progress, subtitle, onRemove }: Props) {
 }
 
 export function VideoGrid({ children }: { children: React.ReactNode }) {
+  if (Children.count(children) === 0) return <Empty />
   return <div className="grid">{children}</div>
 }
 
