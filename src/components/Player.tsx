@@ -91,6 +91,8 @@ function DirectPlayer({ id, start, onEnded, onFail, loop, bare, paused, title = 
     const sync = () => {
       if (document.hidden) return
       if (Math.abs(audio.currentTime - video.currentTime) > 0.25) audio.currentTime = video.currentTime
+      // L'image joue mais pas le son (piste arrivée en retard, fin de boucle…) : on relance le son.
+      if (!video.paused && audio.paused && audio.readyState >= 2) audio.play().catch(() => {})
     }
     // En arrière-plan, le téléphone suspend l'image : on laisse le son continuer,
     // puis on recale l'image sur le son au retour.
@@ -118,8 +120,9 @@ function DirectPlayer({ id, start, onEnded, onFail, loop, bare, paused, title = 
       ['volumechange', () => ((audio.volume = video.volume), (audio.muted = video.muted))],
     ]
     on.forEach(([e, f]) => video.addEventListener(e, f))
+    // Synchro fréquente : le son reprend en moins d'une demi-seconde s'il décroche.
+    const fast = setInterval(sync, 400)
     const timer = setInterval(() => {
-      sync()
       if (video.currentTime > 5) updatePosition(id, video.currentTime)
     }, 2000)
     return () => {
@@ -129,6 +132,7 @@ function DirectPlayer({ id, start, onEnded, onFail, loop, bare, paused, title = 
       video.removeEventListener('pause', announce)
       if (!bare) clearNowPlaying()
       clearInterval(timer)
+      clearInterval(fast)
       if (video.currentTime > 5) updatePosition(id, video.currentTime)
     }
   }, [s, src, audioSrc, id, start, bare, title, artist])
@@ -156,7 +160,16 @@ function DirectPlayer({ id, start, onEnded, onFail, loop, bare, paused, title = 
           ref={a}
           src={audioSrc}
           preload="auto"
-          onCanPlay={() => mark('son')}
+          loop={loop}
+          onCanPlay={(e) => {
+            mark('son')
+            // Piste prête après le démarrage de l'image : on la cale et on la lance.
+            const vid = v.current
+            if (vid && !vid.paused) {
+              e.currentTarget.currentTime = vid.currentTime
+              e.currentTarget.play().catch(() => {})
+            }
+          }}
           onError={() => {
             // URL directe refusée : on télécharge la piste par la couche native.
             const fmt = s.formats.find((f) => f.url === s.audio)
