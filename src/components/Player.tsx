@@ -107,6 +107,16 @@ function DirectPlayer({ id, start, onEnded, onFail, loop, bare, paused, title = 
     // En arrière-plan, le téléphone suspend l'image : on laisse le son continuer,
     // puis on recale l'image sur le son au retour.
     const onVis = () => {
+      // Shorts : pause quand on quitte l'appli (sauf si la lecture en arrière-plan est activée).
+      if (document.hidden && bare && !getSettings().shortsBackground) {
+        video.pause()
+        audio.pause()
+        return
+      }
+      if (!document.hidden && bare && !getSettings().shortsBackground && !paused) {
+        video.play().catch(() => {})
+        return
+      }
       if (!document.hidden && !audio.paused) {
         video.currentTime = audio.currentTime
         video.play().catch(() => {})
@@ -116,6 +126,7 @@ function DirectPlayer({ id, start, onEnded, onFail, loop, bare, paused, title = 
     // Notification et contrôles système (sauf Shorts) ; la musique se met en pause.
     const media = () => (document.hidden ? audio : video)
     const announce = () =>
+      (!bare || getSettings().shortsBackground) &&
       setNowPlaying({ title: title || (bare ? 'Short' : 'Youtmusic'), artist, artwork: `https://i.ytimg.com/vi/${id}/hqdefault.jpg` }, !media().paused, { toggle: () => (media().paused ? media().play() : media().pause()) }, video)
     const onPlay = () => (pauseMusic(), announce())
     video.addEventListener('play', onPlay)

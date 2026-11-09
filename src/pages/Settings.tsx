@@ -309,6 +309,7 @@ export function Settings() {
               ).map(([k, l]) => (
                 <Toggle key={k} on={s.shortsButtons[k]} label={l} set={(v) => saveSettings({ shortsButtons: { ...s.shortsButtons, [k]: v } })} />
               ))}
+              <Toggle on={s.shortsBackground} set={(v) => saveSettings({ shortsBackground: v })} label="Shorts en arrière-plan" hint="Continuer le son des Shorts quand tu quittes l’appli" />
               <label>Côté des boutons</label>
               <Choice value={s.shortsSide} set={(v) => saveSettings({ shortsSide: v })} options={[['right', 'Droite'], ['left', 'Gauche']]} />
             </>
