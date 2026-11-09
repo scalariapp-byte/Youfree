@@ -20,7 +20,7 @@ export function Logo({ compact = false }: { compact?: boolean }) {
 }
 
 /** Applique le thème choisi (sombre par défaut) sur <html>. */
-function useTheme() {
+export function useTheme() {
   const { theme } = useSettings()
   useEffect(() => {
     const root = document.documentElement
@@ -129,7 +129,7 @@ const NAV = [
 ]
 
 export function Layout({ children }: { children: ReactNode }) {
-  useTheme()
+
   const { all } = useAllSubs()
   const { showShorts } = useSettings()
   const [searching, setSearching] = useState(false)

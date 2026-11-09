@@ -1,8 +1,9 @@
 import { useState, type ChangeEvent } from 'react'
 import { exportAll, importAll, importLocalSubs, saveSettings, useLocalSubs, useSettings } from '../lib/storage'
 import { canUseLocal } from '../lib/nativeFetch'
+import { LANGS } from '../lib/i18n'
 
-const REGIONS = ['FR', 'BE', 'CH', 'CA', 'LU', 'MA', 'SN', 'US', 'GB', 'DE', 'ES', 'IT']
+const REGIONS = ['FR', 'BE', 'CH', 'CA', 'LU', 'MA', 'DZ', 'TN', 'SN', 'US', 'GB', 'DE', 'ES', 'IT', 'PT', 'BR', 'MX']
 
 function download(name: string, text: string) {
   const a = document.createElement('a')
@@ -77,6 +78,16 @@ export function Settings() {
       <section>
         <h2>Lecture</h2>
         <label>
+          Langue des vidéos
+          <select value={s.lang} onChange={(e) => saveSettings({ lang: e.target.value, region: LANGS.find((l) => l.code === e.target.value)?.region ?? s.region })}>
+            {LANGS.map((l) => (
+              <option key={l.code} value={l.code}>
+                {l.flag} {l.label}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label>
           Région des tendances
           <select value={s.region} onChange={(e) => saveSettings({ region: e.target.value })}>
             {REGIONS.map((r) => (
@@ -106,9 +117,14 @@ export function Settings() {
 
       <section>
         <h2>Aide</h2>
-        <a href="#/diagnostic" className="btn ghost">
-          Diagnostic
-        </a>
+        <div className="row-btns">
+          <a href="#/diagnostic" className="btn ghost">
+            Diagnostic
+          </a>
+          <button className="btn ghost" onClick={() => saveSettings({ onboarded: false })}>
+            Revoir l’accueil
+          </button>
+        </div>
       </section>
 
       <section>

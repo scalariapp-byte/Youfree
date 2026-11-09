@@ -4,6 +4,9 @@ import { useSyncExternalStore } from 'react'
 export interface Settings {
   region: string
   showShorts: boolean
+  lang: string
+  interests: string[]
+  onboarded: boolean
   theme: 'dark' | 'light' | 'system'
   hideGaming: boolean
   player: 'direct' | 'nocookie' | 'invidious'
@@ -33,6 +36,9 @@ export interface LocalChannel {
 const DEFAULT_SETTINGS: Settings = {
   region: 'FR',
   showShorts: true,
+  lang: 'fr',
+  interests: [],
+  onboarded: false,
   theme: 'dark',
   hideGaming: false,
   player: 'direct',

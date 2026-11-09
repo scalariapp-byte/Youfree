@@ -1,7 +1,10 @@
 import { lazy, Suspense } from 'react'
 import { HashRouter, Route, Routes } from 'react-router-dom'
-import { Layout } from './components/Layout'
+import { Layout, useTheme } from './components/Layout'
 import { Home } from './pages/Home'
+import { Welcome } from './pages/Welcome'
+import { useSettings } from './lib/storage'
+import { isAvailable } from './lib/youtube'
 
 // Pages secondaires chargées à la demande : démarrage plus rapide.
 const Watch = lazy(() => import('./pages/Watch').then((m) => ({ default: m.Watch })))
@@ -18,6 +21,9 @@ const Diagnostic = lazy(() => import('./pages/Diagnostic').then((m) => ({ defaul
 setTimeout(() => [import('./pages/Watch'), import('./pages/Shorts'), import('./pages/Search')], 1500)
 
 export default function App() {
+  const { onboarded } = useSettings()
+  useTheme()
+  if (!onboarded && isAvailable()) return <Welcome />
   return (
     <HashRouter>
       <Layout>

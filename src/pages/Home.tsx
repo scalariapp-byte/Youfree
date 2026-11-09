@@ -31,6 +31,14 @@ function ContinueWatching() {
   )
 }
 
+/** « Pour toi » : vidéos populaires de chaque centre d'intérêt, entremêlées. */
+async function forYou(interests: string[]) {
+  const lists = await Promise.all(interests.slice(0, 4).map((c) => getTrending(c).then((r) => r.videos, () => [])))
+  const out = []
+  for (let i = 0; i < 30; i++) for (const l of lists) if (l[i]) out.push(l[i])
+  return { videos: out, next: undefined }
+}
+
 export function Home() {
   const settings = useSettings()
   const { all, loading } = useAllSubs()
@@ -38,8 +46,9 @@ export function Home() {
   const key = all.map((c) => c.id).join(',')
 
   const feed = useAsync(() => (all.length ? getSubscriptionFeed(all) : Promise.resolve([])), [key, settings.hideGaming], `feed:${key}`)
-  const popular = useAsync(() => getTrending(cat), [cat, settings.region, settings.hideGaming], `pop:${settings.region}:${cat ?? ''}`)
-  const shorts = useAsync(() => (settings.showShorts ? getShorts(cat) : Promise.resolve({ videos: [], next: undefined })), [cat, settings.showShorts, settings.region], `sh:${settings.region}:${cat ?? ''}:${settings.showShorts}`)
+  const mix = !cat && settings.interests.length > 0
+  const popular = useAsync(() => (mix ? forYou(settings.interests) : getTrending(cat)), [cat, settings.region, settings.hideGaming], `pop:${settings.lang}:${settings.region}:${cat ?? ''}:${mix ? settings.interests.join('.') : ''}`)
+  const shorts = useAsync(() => (settings.showShorts ? getShorts(cat) : Promise.resolve({ videos: [], next: undefined })), [cat, settings.showShorts, settings.region], `sh:${settings.lang}:${settings.region}:${cat ?? ''}:${settings.showShorts}`)
 
   if (!isAvailable()) return <Onboarding />
 
@@ -72,7 +81,7 @@ export function Home() {
 
       <section>
         <div className="section-head">
-          <h2>{cat ? 'Populaire dans ce thème' : 'Populaire en ce moment'}</h2>
+          <h2>{cat ? 'Populaire dans ce thème' : mix ? 'Pour toi' : 'Populaire en ce moment'}</h2>
           <Link to="/trending">Explorer</Link>
         </div>
         {popular.error ? <ErrorBox error={popular.error} /> : !popular.data ? <Skeletons n={8} /> : (

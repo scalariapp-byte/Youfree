@@ -437,3 +437,83 @@ button.pill:hover { background: var(--surface-3); }
 .grid > .card, .watch-side .card, .comment { content-visibility: auto; contain-intrinsic-size: auto 320px; }
 .watch-side .card { contain-intrinsic-size: auto 96px; }
 .comment { contain-intrinsic-size: auto 80px; }
+
+/* ============ Accueil du premier lancement ============ */
+.welcome {
+  position: fixed; inset: 0; z-index: 100; display: flex; flex-direction: column; overflow: hidden;
+  padding: calc(24px + env(safe-area-inset-top)) 22px calc(22px + env(safe-area-inset-bottom)); background: var(--bg);
+}
+.welcome-bg span {
+  position: absolute; width: 60vmax; height: 60vmax; border-radius: 50%; filter: blur(70px); opacity: .32;
+  background: var(--accent); animation: float 14s ease-in-out infinite alternate; pointer-events: none;
+}
+.welcome-bg span:nth-child(1) { top: -30vmax; left: -20vmax; }
+.welcome-bg span:nth-child(2) { bottom: -35vmax; right: -25vmax; background: var(--accent-2); animation-duration: 18s; }
+.welcome-bg span:nth-child(3) { top: 30%; left: 40%; width: 30vmax; height: 30vmax; background: #8b5cf6; opacity: .18; animation-duration: 11s; }
+@keyframes float { to { transform: translate(8vmax, 6vmax) scale(1.15); } }
+.welcome-dots { position: relative; display: flex; gap: 6px; justify-content: center; }
+.welcome-dots i { width: 8px; height: 8px; border-radius: 99px; background: var(--surface-3); transition: width .35s cubic-bezier(.2,.8,.2,1), background .35s; }
+.welcome-dots i.on { width: 28px; background: var(--accent); }
+.welcome-dots i.done { background: color-mix(in srgb, var(--accent) 55%, var(--surface-3)); }
+.welcome-step {
+  position: relative; flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center;
+  max-width: 560px; width: 100%; margin: 0 auto; overflow-y: auto;
+}
+.welcome-step.fwd { animation: stepIn .5s cubic-bezier(.2,.8,.2,1) both; }
+.welcome-step.back { animation: stepBack .5s cubic-bezier(.2,.8,.2,1) both; }
+@keyframes stepIn { from { opacity: 0; transform: translateX(40px) scale(.98); } }
+@keyframes stepBack { from { opacity: 0; transform: translateX(-40px) scale(.98); } }
+.welcome h1 { font-size: clamp(1.9rem, 7vw, 2.8rem); letter-spacing: -.03em; margin: 22px 0 10px; }
+.welcome h2 { font-size: clamp(1.4rem, 5.5vw, 2rem); letter-spacing: -.02em; margin-bottom: 8px; }
+.grad { background: linear-gradient(90deg, var(--accent), var(--accent-2), #8b5cf6); -webkit-background-clip: text; background-clip: text; color: transparent; background-size: 200%; animation: gradMove 4s ease infinite alternate; }
+@keyframes gradMove { to { background-position: 100%; } }
+.lead { color: var(--muted); margin: 0 0 22px; font-size: 1.02rem; }
+.welcome-logo { animation: pop .7s cubic-bezier(.2,1.4,.4,1) both; filter: drop-shadow(0 18px 40px color-mix(in srgb, var(--accent) 45%, transparent)); }
+.welcome-logo .ring { transform-origin: center; animation: pulse2 2.4s ease-in-out infinite; }
+@keyframes pop { from { opacity: 0; transform: scale(.4) rotate(-12deg); } }
+@keyframes pulse2 { 50% { transform: scale(1.08); } }
+.perks { list-style: none; padding: 0; margin: 0; display: grid; gap: 10px; text-align: left; }
+.perks li, .lang, .interest { animation: rise .5s cubic-bezier(.2,.8,.2,1) both; animation-delay: calc(var(--i, 0) * 60ms + 150ms); }
+@keyframes rise { from { opacity: 0; transform: translateY(14px); } }
+.perks li { display: flex; align-items: center; gap: 10px; padding: 12px 16px; border-radius: 14px; background: color-mix(in srgb, var(--surface) 80%, transparent); backdrop-filter: blur(10px); }
+.perks svg { color: var(--accent); flex: none; }
+.lang-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; width: 100%; }
+.lang, .interest {
+  display: flex; align-items: center; justify-content: center; gap: 8px; padding: 14px 12px; border-radius: 16px; font-weight: 650;
+  border: 1.5px solid var(--border); background: color-mix(in srgb, var(--surface) 85%, transparent); backdrop-filter: blur(10px);
+  transition: transform .2s cubic-bezier(.2,1.4,.4,1), border-color .2s, background .2s;
+}
+.lang .flag { font-size: 1.4rem; }
+.lang:active, .interest:active { transform: scale(.94); }
+.lang.on, .interest.on { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 18%, var(--surface)); transform: scale(1.03); }
+.interest-grid { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+.interest { padding: 11px 18px; border-radius: 99px; }
+.interest svg { color: var(--accent); animation: pop .3s both; }
+.pref { display: flex; align-items: center; justify-content: space-between; gap: 14px; width: 100%; padding: 16px; margin-bottom: 10px; border-radius: 16px; background: var(--surface); border: 1px solid var(--border); text-align: left; animation: rise .45s both; }
+.pref:nth-child(3) { animation-delay: 80ms; } .pref:nth-child(4) { animation-delay: 160ms; }
+.pref small { display: block; color: var(--muted); }
+.switch { flex: none; position: relative; width: 50px; height: 30px; border-radius: 99px; border: 0; background: var(--surface-3); transition: background .25s; }
+.switch::after { content: ''; position: absolute; top: 3px; left: 3px; width: 24px; height: 24px; border-radius: 50%; background: #fff; box-shadow: 0 2px 6px rgb(0 0 0 / .3); transition: transform .3s cubic-bezier(.2,1.4,.4,1); }
+.switch.on { background: var(--accent); }
+.switch.on::after { transform: translateX(20px); }
+.welcome-nav { position: relative; display: flex; justify-content: space-between; align-items: center; gap: 12px; max-width: 560px; width: 100%; margin: 0 auto; }
+.btn.big { height: 52px; padding: 0 28px; font-size: 1.02rem; box-shadow: 0 10px 30px color-mix(in srgb, var(--accent) 40%, transparent); }
+
+/* ============ Animations de l'appli ============ */
+.grid > .card, .shorts-row > *, .row > * { animation: rise .45s cubic-bezier(.2,.8,.2,1) both; }
+.grid > .card:nth-child(2), .shorts-row > :nth-child(2), .row > :nth-child(2) { animation-delay: 40ms; }
+.grid > .card:nth-child(3), .shorts-row > :nth-child(3), .row > :nth-child(3) { animation-delay: 80ms; }
+.grid > .card:nth-child(4), .shorts-row > :nth-child(4) { animation-delay: 120ms; }
+.grid > .card:nth-child(5), .shorts-row > :nth-child(5) { animation-delay: 160ms; }
+.grid > .card:nth-child(6), .shorts-row > :nth-child(6) { animation-delay: 200ms; }
+.chip { transition: background .2s, color .2s, transform .2s cubic-bezier(.2,1.4,.4,1); }
+.chip:active { transform: scale(.92); }
+.tabbar a svg { transition: transform .3s cubic-bezier(.2,1.4,.4,1); }
+.tabbar a.active svg { transform: translateY(-2px) scale(1.1); }
+.tabbar a { position: relative; }
+.tabbar a.active::before { content: ''; position: absolute; top: 6px; width: 44px; height: 30px; border-radius: 99px; background: color-mix(in srgb, var(--accent) 16%, transparent); animation: pop .3s both; }
+.icon-btn, .btn, .pill { transition: transform .15s, background .15s, filter .15s; }
+.icon-btn:active, .pill:active { transform: scale(.9); }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; animation-delay: 0ms !important; transition-duration: .01ms !important; }
+}

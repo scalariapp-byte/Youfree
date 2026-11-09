@@ -2,6 +2,7 @@
 // sans clé ni quota. Le module lourd est chargé une seule fois, dès le démarrage.
 import { getSettings, type LocalChannel } from './storage'
 import { canUseLocal } from './nativeFetch'
+import { themeQuery } from './i18n'
 
 export interface Video {
   id: string
@@ -69,11 +70,6 @@ export function splitShorts(list: Video[]) {
   return { videos, shorts }
 }
 
-const SHORTS_QUERIES: Record<string, string> = {
-  '': 'shorts', '10': 'musique shorts', '25': 'actualité shorts', '28': 'tech shorts', '27': 'apprendre shorts',
-  '17': 'sport shorts', '24': 'drôle shorts', '23': 'humour shorts', '1': 'film shorts', '26': 'recette shorts', '2': 'voiture shorts',
-}
-
 const filtered = async (p: Promise<{ videos: Video[]; next?: string }>) => {
   const r = await p
   return { videos: applyFilters(r.videos), next: r.next }
@@ -89,7 +85,7 @@ export const suggest = async (q: string) => (q.trim() ? (await local()).suggest(
 export const getChannel = async (id: string) => (await local()).channel(id)
 export const getPlaylistVideos = async (id: string, max = 30, token?: string) => (await local()).playlistVideos(id, max, token)
 export const getComments = async (id: string) => (await local()).comments(id)
-export const getShorts = async (cat?: string, token?: string) => filtered((await local()).shorts(SHORTS_QUERIES[cat ?? ''] ?? 'shorts', token))
+export const getShorts = async (cat?: string, token?: string) => filtered((await local()).shorts(themeQuery(getSettings().lang, cat, true), token))
 export const getChannelShorts = async (id: string) => (await local()).channelShorts(id)
 
 const FEED_CACHE = 'youfree:feed'

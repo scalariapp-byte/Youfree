@@ -194,19 +194,7 @@ async function resume(token: string) {
 
 // « Tendances » n'existe plus côté YouTube : on prend les vidéos les plus populaires
 // de la semaine pour un thème donné.
-const THEME_QUERIES: Record<string, string> = {
-  '': 'vidéo',
-  '10': 'musique clip officiel',
-  '25': 'actualités',
-  '28': 'science technologie',
-  '27': 'éducation documentaire',
-  '17': 'sport résumé',
-  '24': 'divertissement',
-  '23': 'humour sketch',
-  '1': 'film bande annonce',
-  '26': 'cuisine recette',
-  '2': 'auto essai',
-}
+import { themeQuery } from './i18n'
 
 /** Ouvre la session à l'avance pour que la première requête soit immédiate. */
 export const warm = () => yt()
@@ -217,7 +205,7 @@ export async function trending(categoryId?: string, pageToken?: string) {
     const r = await resume(pageToken)
     return { videos: toVideos(r.videos), next: remember(r) }
   }
-  const q = THEME_QUERIES[categoryId ?? ''] ?? THEME_QUERIES['']
+  const q = themeQuery(getSettings().lang, categoryId)
   const r = await (await yt()).search(q, { upload_date: 'week', type: 'video', prioritize: 'popularity' })
   return { videos: toVideos(r.videos), next: remember(r) }
 }
