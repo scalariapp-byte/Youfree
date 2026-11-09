@@ -352,3 +352,47 @@ export async function subscriptionFeed(channels: LocalChannel[]): Promise<Video[
     .sort((a, b) => b.publishedAt.localeCompare(a.publishedAt))
     .slice(0, 150)
 }
+
+// ---------- YouTube Music
+
+export interface Track {
+  id: string
+  title: string
+  artist: string
+  thumbnail: string
+  duration?: string
+}
+export interface MusicShelf {
+  title: string
+  items: Track[]
+}
+
+const toTrack = (n: any): Track | null => {
+  const id = n?.id ?? n?.video_id ?? n?.endpoint?.payload?.videoId
+  if (!id || String(id).length !== 11) return null
+  const thumbs = n.thumbnail?.contents ?? n.thumbnail ?? n.thumbnails ?? []
+  return {
+    id,
+    title: txt(n.title) || String(n.title ?? ''),
+    artist: (n.artists ?? n.authors ?? []).map((a: any) => a.name).join(', ') || txt(n.subtitle) || n.author?.name || '',
+    thumbnail: bestThumb(Array.isArray(thumbs) ? thumbs : []) || thumbFor(id),
+    duration: n.duration?.text,
+  }
+}
+
+export async function musicHome(): Promise<MusicShelf[]> {
+  const feed: any = await (await yt()).music.getHomeFeed()
+  return (feed.sections ?? [])
+    .map((s: any) => ({ title: txt(s.header?.title) || '', items: (s.contents ?? []).map(toTrack).filter(Boolean) }))
+    .filter((s: MusicShelf) => s.items.length)
+}
+
+export async function musicSearch(q: string): Promise<Track[]> {
+  const r: any = await (await yt()).music.search(q, { type: 'song' })
+  return (r.songs?.contents ?? r.contents?.flatMap((c: any) => c.contents ?? []) ?? []).map(toTrack).filter(Boolean)
+}
+
+export async function musicUpNext(id: string): Promise<Track[]> {
+  const p: any = await (await yt()).music.getUpNext(id)
+  return (p.contents ?? []).map((n: any) => toTrack({ ...n, id: n.video_id, artists: n.artists, thumbnail: n.thumbnail })).filter(Boolean)
+}

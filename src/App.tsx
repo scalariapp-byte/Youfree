@@ -15,6 +15,7 @@ const Channel = lazy(() => import('./pages/Channel').then((m) => ({ default: m.C
 const Subscriptions = lazy(() => import('./pages/Subscriptions').then((m) => ({ default: m.Subscriptions })))
 const Library = lazy(() => import('./pages/Library').then((m) => ({ default: m.Library })))
 const Settings = lazy(() => import('./pages/Settings').then((m) => ({ default: m.Settings })))
+const Music = lazy(() => import('./pages/Music').then((m) => ({ default: m.Music })))
 const Diagnostic = lazy(() => import('./pages/Diagnostic').then((m) => ({ default: m.Diagnostic })))
 
 // Précharge les pages les plus utilisées dès que l'accueil est affiché.
@@ -38,6 +39,7 @@ export default function App() {
             <Route path="/subscriptions" element={<Subscriptions />} />
             <Route path="/library" element={<Library />} />
             <Route path="/settings" element={<Settings />} />
+            <Route path="/music" element={<Music />} />
             <Route path="/diagnostic" element={<Diagnostic />} />
             <Route path="*" element={<Home />} />
           </Routes>

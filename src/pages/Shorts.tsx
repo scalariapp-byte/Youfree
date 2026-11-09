@@ -4,15 +4,14 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { ErrorBox } from '../components/ErrorBox'
 import { Icon } from '../components/Icon'
-import { decode, compact } from '../lib/format'
+import { decode, compact, ago } from '../lib/format'
+import { Comments } from '../components/Comments'
 import { toggleLike, useLiked, useBlocked } from '../lib/storage'
 import { applyFilters, getComments, getShorts, getVideos, search, type Video } from '../lib/youtube'
 import { useAsync } from '../lib/useAsync'
 import { Sheet } from '../components/Sheet'
 import { VideoMenu, DownloadSheet } from '../components/VideoActions'
-import { Avatar } from '../components/Layout'
 import { toStored } from '../components/VideoCard'
-import { THEMES } from '../components/Themes'
 import { Player } from '../components/Player'
 import { getStreams } from '../lib/stream'
 import { canUseLocal } from '../lib/nativeFetch'
@@ -47,7 +46,7 @@ function ShortSlide({ v, active, near }: { v: Video; active: boolean; near: bool
           </button>
           <button onClick={() => setSheet('info')}>
             <Icon name="comment" size={26} />
-            <span>Avis</span>
+            <span>Détails</span>
           </button>
           <button onClick={() => setSheet('dl')}>
             <Icon name="download" size={26} />
@@ -59,24 +58,27 @@ function ShortSlide({ v, active, near }: { v: Video; active: boolean; near: bool
           </button>
         </div>
       </div>
-      <Sheet open={sheet === 'info'} onClose={() => setSheet('')} title="Description et commentaires">
+      <Sheet open={sheet === 'info'} onClose={() => setSheet('')} title="Détails">
         {!info.data ? (
           <span className="spinner" />
         ) : (
           <div className="info-sheet">
-            <p className="desc-text">{info.data[0]?.description || decode(v.title)}</p>
-            <h4>{info.data[1].length} commentaires</h4>
-            {info.data[1].map((c) => (
-              <div key={c.id} className="comment">
-                <Avatar src={c.authorAvatar} name={c.author.replace(/^@/, '')} size={32} />
-                <div>
-                  <small>
-                    <strong>{c.author}</strong>
-                  </small>
-                  <p>{c.text}</p>
-                </div>
-              </div>
-            ))}
+            <h4 className="info-title">{decode(info.data[0]?.title || v.title)}</h4>
+            <div className="info-stats">
+              <span>
+                <strong>{compact(info.data[0]?.views || v.views)}</strong> vues
+              </span>
+              {!!info.data[0]?.likes && (
+                <span>
+                  <strong>{compact(info.data[0].likes)}</strong> j’aime
+                </span>
+              )}
+              {info.data[0]?.publishedAt && <span>{ago(info.data[0].publishedAt)}</span>}
+              {(info.data[0]?.channelTitle || v.channelTitle) && <span>@{info.data[0]?.channelTitle || v.channelTitle}</span>}
+            </div>
+            {info.data[0]?.description && <p className="desc-text">{info.data[0].description}</p>}
+            <h4>Commentaires</h4>
+            <Comments list={info.data[1]} />
           </div>
         )}
       </Sheet>
@@ -91,9 +93,8 @@ export function Shorts() {
   const nav = useNavigate()
   const { state } = useLocation() as { state?: { list?: Video[] } }
   const startId = params.get('v')
-  const [cat, setCat] = useState<string | undefined>()
+  const cat: string | undefined = undefined
   const [q, setQ] = useState('')
-  const [typing, setTyping] = useState(false)
   const blocked = useBlocked()
   const load = (token?: string) => (q ? search(q, token, 'shorts') : getShorts(cat, token))
   const [items, setItems] = useState<Video[]>([])
@@ -175,27 +176,15 @@ export function Shorts() {
         <button className="icon-btn" onClick={() => (history.length > 1 ? nav(-1) : nav('/'))} aria-label="Retour">
           <Icon name="back" />
         </button>
-        {typing ? (
-          <form className="shorts-search" onSubmit={(e) => (e.preventDefault(), setQ((e.currentTarget.elements[0] as HTMLInputElement).value.trim()), setTyping(false))}>
-            <input autoFocus defaultValue={q} placeholder="Rechercher des Shorts" enterKeyHint="search" />
-          </form>
-        ) : (
-          <button className="icon-btn" onClick={() => setTyping(true)} aria-label="Rechercher des Shorts">
-            <Icon name="search" />
-          </button>
-        )}
-        <div className="chips">
+        <form className="shorts-search" onSubmit={(e) => (e.preventDefault(), setQ((e.currentTarget.elements[0] as HTMLInputElement).value.trim()))}>
+          <Icon name="search" size={18} />
+          <input key={q} defaultValue={q} placeholder="Rechercher des Shorts" enterKeyHint="search" />
           {q && (
-            <button className="chip on" onClick={() => setQ('')}>
-              « {q} » ✕
+            <button type="button" onClick={() => setQ('')} aria-label="Effacer">
+              <Icon name="close" size={16} />
             </button>
           )}
-          {THEMES.map(([label, key]) => (key === 'all' ? [label, undefined] : [label, key]) as [string, string | undefined]).map(([label, id]) => (
-            <button key={label} className={`chip ${!q && cat === id ? 'on' : ''}`} onClick={() => (setQ(''), setCat(id))}>
-              {label}
-            </button>
-          ))}
-        </div>
+        </form>
       </div>
       {error ? (
         <div className="page">

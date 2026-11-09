@@ -72,3 +72,9 @@ export function prioritize<T extends { title: string; channelTitle?: string }>(l
     .sort((a, b) => a.s - b.s || a.i - b.i)
     .map((x) => x.v)
 }
+
+/** Accueil : uniquement les vidéos détectées dans la langue choisie (s'il en reste assez). */
+export function onlyLang<T extends { title: string; channelTitle?: string }>(list: T[], lang: string, min = 6): T[] {
+  const mine = list.filter((v) => langScore(`${v.title} ${v.channelTitle ?? ''}`, lang) > 0)
+  return mine.length >= min ? mine : prioritize(list, lang)
+}

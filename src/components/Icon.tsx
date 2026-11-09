@@ -23,6 +23,10 @@ const PATHS: Record<string, string> = {
   block: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM5.6 5.6l12.8 12.8',
   dots: 'M12 5h.01M12 12h.01M12 19h.01',
   comment: 'M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z',
+  play: 'M7 4v16l13-8z',
+  pause: 'M7 4h3v16H7zM14 4h3v16h-3z',
+  fwd: 'M9 5l7 7-7 7',
+  music: 'M9 18V5l12-2v13M9 18a3 3 0 1 1-6 0 3 3 0 0 1 6 0zm12-2a3 3 0 1 1-6 0 3 3 0 0 1 6 0z',
   user: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zm-8 9a8 8 0 0 1 16 0',
 }
 

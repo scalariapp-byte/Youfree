@@ -11,6 +11,7 @@ import { useAllSubs } from '../lib/useSubs'
 import { useHistory, useSettings, useBlocked } from '../lib/storage'
 import { getShorts, getSubscriptionFeed, getTrending, isAvailable, splitShorts } from '../lib/youtube'
 import { Onboarding } from './Onboarding'
+import { onlyLang } from '../lib/i18n'
 
 function ContinueWatching() {
   const history = useHistory()
@@ -54,8 +55,8 @@ export function Home() {
   if (!isAvailable()) return <Onboarding />
 
   const subs = splitShorts(feed.data ?? [])
-  const pop = splitShorts(popular.data?.videos ?? [])
-  const shelf = settings.showShorts ? [...subs.shorts, ...pop.shorts, ...(shorts.data?.videos ?? [])].filter((v, i, a) => a.findIndex((x) => x.id === v.id) === i) : []
+  const pop = splitShorts(onlyLang(popular.data?.videos ?? [], settings.lang))
+  const shelf = settings.showShorts ? onlyLang([...subs.shorts, ...pop.shorts, ...(shorts.data?.videos ?? [])], settings.lang).filter((v, i, a) => a.findIndex((x) => x.id === v.id) === i) : []
 
   return (
     <div className="page">

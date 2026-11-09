@@ -52,7 +52,14 @@ function DirectPlayer({ id, start, onEnded, onFail, loop, bare, paused }: { id: 
   useEffect(() => {
     let ok = true
     getStreams(id).then(
-      (r) => ok && (setS(r), setSrc((r.qualities.find((q) => q.height <= settings.quality) ?? r.qualities[r.qualities.length - 1])?.url ?? r.video)),
+      (r) => {
+        if (!ok) return
+        // HLS si les flux directs plafonnent sous 480p (cas du client IOS).
+        const low = !r.qualities.length || r.qualities[0].height < 480
+        if (r.hls && low) r = { ...r, audio: undefined, qualities: [], video: r.hls }
+        setS(r)
+        setSrc((r.qualities.find((q) => q.height <= settings.quality) ?? r.qualities[r.qualities.length - 1])?.url ?? r.video)
+      },
       (e) => ok && onFail((e as Error).message),
     )
     return () => {
@@ -102,7 +109,7 @@ function DirectPlayer({ id, start, onEnded, onFail, loop, bare, paused }: { id: 
         controls={!bare}
         onClick={bare ? (e) => (e.currentTarget.paused ? e.currentTarget.play() : e.currentTarget.pause()) : undefined}
         loop={loop || looping}
-        style={{ objectFit: settings.fit }}
+        style={{ objectFit: bare ? 'cover' : settings.fit }}
         onLoadedMetadata={(e) => (e.currentTarget.playbackRate = settings.speed)}
         onEnded={() => (updatePosition(id, 0), onEnded?.())}
         onError={() => onFail('lecture refusée par le serveur vidéo')}

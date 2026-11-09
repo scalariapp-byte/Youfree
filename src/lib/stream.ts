@@ -16,7 +16,11 @@ export interface Streams {
   qualities: { height: number; url: string }[]
   formats: Fmt[]
   client: string
+  /** Flux HLS (vidéo + son, qualité adaptative jusqu'en 1080p et plus) si le lecteur sait le lire. */
+  hls?: string
 }
+
+export const canHls = () => !!document.createElement('video').canPlayType('application/vnd.apple.mpegurl')
 
 const CLIENTS = ['ANDROID_VR', 'IOS', 'ANDROID'] as const
 const cache = new Map<string, Promise<Streams>>()
@@ -33,18 +37,19 @@ async function fetchStreams(id: string): Promise<Streams> {
       const formats: Fmt[] = [...(sd.formats ?? []), ...(sd.adaptive_formats ?? [])]
         .filter((f: any) => f.url)
         .map((f: any) => ({ url: f.url, height: f.height ?? 0, mime: f.mime_type ?? '', bitrate: f.bitrate ?? 0, audio: !!f.has_audio, video: !!f.has_video }))
-      if (!formats.length) throw new Error('URL chiffrées')
+      const hls: string | undefined = sd.hls_manifest_url && canHls() ? sd.hls_manifest_url : undefined
+      if (!formats.length && !hls) throw new Error('URL chiffrées')
       const audio = formats.filter((f) => f.audio && !f.video && /mp4/.test(f.mime)).sort((a, b) => b.bitrate - a.bitrate)[0]
       const byH = new Map<number, Fmt>()
       formats.filter((f) => f.video && !f.audio && /avc1/.test(f.mime)).forEach((f) => (!byH.has(f.height) || f.bitrate > byH.get(f.height)!.bitrate) && byH.set(f.height, f))
       const qualities = [...byH.values()].sort((a, b) => b.height - a.height).map((f) => ({ height: f.height, url: f.url }))
       if (audio && qualities.length) {
         const pick = qualities.find((q) => q.height <= 720) ?? qualities[qualities.length - 1]
-        return { video: pick.url, audio: audio.url, height: pick.height, qualities, formats, client }
+        return { video: pick.url, audio: audio.url, height: pick.height, qualities, formats, client, hls }
       }
       const prog = formats.filter((f) => f.audio && f.video).sort((a, b) => b.height - a.height)[0]
-      if (!prog) throw new Error('aucun format lisible')
-      return { video: prog.url, height: prog.height, qualities: [{ height: prog.height, url: prog.url }], formats, client }
+      if (!prog && !hls) throw new Error('aucun format lisible')
+      return { video: prog?.url ?? hls!, height: prog?.height ?? 720, qualities: prog ? [{ height: prog.height, url: prog.url }] : [], formats, client, hls }
     } catch (e) {
       errors.push(`${client}: ${(e as Error).message}`)
     }

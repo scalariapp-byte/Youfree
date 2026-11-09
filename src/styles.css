@@ -627,3 +627,54 @@ body { background: var(--bg); }
 .shorts-search input { height: 36px; width: min(60vw, 280px); padding: 0 14px; border-radius: 99px; border: 0; background: rgb(255 255 255 / .16); color: #fff; font: inherit; outline: none; backdrop-filter: blur(8px); }
 .short-frame video { object-fit: cover; }
 .short-text p { cursor: pointer; }
+
+/* ============ Shorts : la vidéo s'arrête au-dessus de la barre d'onglets ============ */
+@media (max-width: 860px) {
+  .shorts-page { height: calc(100dvh - var(--tab) - 20px - env(safe-area-inset-bottom)); }
+  .short-overlay { padding-bottom: 14px; }
+  .tabbar a span { font-size: .64rem; }
+}
+.shorts-top { padding: 10px 12px 28px; }
+.shorts-search {
+  flex: 1; display: flex; align-items: center; gap: 8px; height: 40px; padding: 0 6px 0 14px; border-radius: 99px;
+  background: rgb(0 0 0 / .45); border: 1px solid rgb(255 255 255 / .18); backdrop-filter: blur(12px); color: #fff;
+}
+.shorts-search input { flex: 1; min-width: 0; height: 100%; width: auto; padding: 0; border: 0; background: none; color: #fff; font: inherit; outline: none; backdrop-filter: none; }
+.shorts-search input::placeholder { color: rgb(255 255 255 / .7); }
+.shorts-search button { display: grid; place-items: center; width: 30px; height: 30px; border: 0; border-radius: 50%; background: rgb(255 255 255 / .15); color: #fff; }
+.info-title { font-size: 1.05rem; margin: 0 0 8px; }
+.info-stats { display: flex; flex-wrap: wrap; gap: 6px 14px; color: var(--muted); font-size: .88rem; margin-bottom: 12px; }
+.info-stats strong { color: var(--text); }
+.comments-list .link.small { font-size: .82rem; margin-bottom: 12px; display: inline-block; }
+
+/* ============ Musique ============ */
+.music-search { display: flex; align-items: center; gap: 10px; height: 46px; padding: 0 16px; margin-bottom: 22px; border-radius: 99px; background: var(--surface-2); border: 1px solid var(--border); color: var(--muted); }
+.music-search:focus-within { border-color: var(--accent); }
+.music-search input { flex: 1; height: 100%; border: 0; outline: 0; background: none; color: var(--text); font: inherit; }
+.album-row { display: grid; grid-auto-flow: column; grid-auto-columns: 150px; gap: 14px; overflow-x: auto; scrollbar-width: none; padding-bottom: 4px; }
+.album { display: flex; flex-direction: column; gap: 6px; border: 0; background: none; padding: 0; text-align: left; min-width: 0; }
+.album img { width: 150px; height: 150px; object-fit: cover; border-radius: 14px; background: var(--surface-2); box-shadow: 0 8px 22px rgb(0 0 0 / .3); transition: transform .2s; }
+.album:active img { transform: scale(.95); }
+.album strong, .track strong { font-size: .9rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.album small, .track small { color: var(--muted); font-size: .8rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.track-list { display: flex; flex-direction: column; gap: 4px; }
+.track { display: flex; align-items: center; gap: 12px; padding: 8px; border: 0; border-radius: 12px; background: none; text-align: left; }
+.track > span { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.track img { width: 52px; height: 52px; border-radius: 8px; object-fit: cover; flex: none; }
+.track.on { background: color-mix(in srgb, var(--accent) 14%, transparent); }
+.track.on strong { color: var(--accent); }
+.music-bar {
+  position: fixed; z-index: 39; left: 10px; right: 10px; bottom: calc(var(--tab) + 18px + env(safe-area-inset-bottom));
+  display: flex; align-items: center; gap: 6px; padding: 8px 8px 8px 8px; border-radius: 18px; overflow: hidden;
+  background: color-mix(in srgb, var(--bg-elev) 88%, transparent); border: 1px solid var(--border); backdrop-filter: blur(16px);
+  box-shadow: 0 10px 30px rgb(0 0 0 / .4); animation: rise .3s both;
+}
+.music-bar img { width: 44px; height: 44px; border-radius: 10px; object-fit: cover; }
+.music-meta { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.music-meta strong { font-size: .88rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.music-meta small { color: var(--muted); font-size: .78rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.music-bar .play { background: var(--accent); color: var(--accent-text); }
+.music-progress { position: absolute; left: 0; right: 0; top: 0; height: 3px; background: var(--surface-3); cursor: pointer; }
+.music-progress span { display: block; height: 100%; background: var(--accent); }
+@media (min-width: 861px) { .music-bar { left: calc(var(--side) + 20px); right: 20px; bottom: 20px; } }
+.immersive .music-bar { display: none; }

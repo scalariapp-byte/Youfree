@@ -4,6 +4,7 @@ import { useAllSubs } from '../lib/useSubs'
 import { useSettings } from '../lib/storage'
 import { Icon } from './Icon'
 import { UpdateBanner } from './UpdateBanner'
+import { MusicBar } from './MusicBar'
 import { suggest } from '../lib/youtube'
 
 export function Logo({ compact = false }: { compact?: boolean }) {
@@ -131,6 +132,7 @@ function SearchBar({ onDone, autoFocus }: { onDone?: () => void; autoFocus?: boo
 const NAV = [
   { to: '/', icon: 'home', label: 'Accueil', end: true },
   { to: '/shorts', icon: 'shorts', label: 'Shorts' },
+  { to: '/music', icon: 'music', label: 'Musique' },
   { to: '/subscriptions', icon: 'subs', label: 'Abonnements' },
   { to: '/library', icon: 'library', label: 'Bibliothèque' },
 ]
@@ -197,10 +199,11 @@ export function Layout({ children }: { children: ReactNode }) {
       </nav>
 
       <main className="content">
-        <UpdateBanner />
+        {!immersive && <UpdateBanner />}
         {children}
       </main>
 
+      <MusicBar />
       <nav className="tabbar">
         {nav.map((n) => (
           <NavLink key={n.to} to={n.to} end={n.end} viewTransition>

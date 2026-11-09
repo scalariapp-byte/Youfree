@@ -10,6 +10,7 @@ import { getHistory, recordWatch, saveSettings, toggleLike, toggleLocalSub, togg
 import { useAllSubs } from '../lib/useSubs'
 import { Icon } from '../components/Icon'
 import { DownloadSheet } from '../components/VideoActions'
+import { Comments } from '../components/Comments'
 import { Avatar } from '../components/Layout'
 
 function Linkified({ text }: { text: string }) {
@@ -146,23 +147,7 @@ export function Watch() {
             </div>
             <section className="comments">
               <h3>Commentaires</h3>
-              {comments.data?.length === 0 && <p className="muted">Commentaires désactivés ou absents.</p>}
-              {comments.data?.map((c) => (
-                <div key={c.id} className="comment">
-                  <Avatar src={c.authorAvatar} name={c.author.replace(/^@/, '')} size={36} />
-                  <div>
-                    <small>
-                      <strong>{c.author}</strong> · {ago(c.publishedAt)}
-                    </small>
-                    <p>{c.text}</p>
-                    {c.likes > 0 && (
-                      <small className="muted likes">
-                        <Icon name="like" size={14} /> {compact(c.likes)}
-                      </small>
-                    )}
-                  </div>
-                </div>
-              ))}
+              {comments.data && <Comments list={comments.data} />}
             </section>
           </>
         )}
