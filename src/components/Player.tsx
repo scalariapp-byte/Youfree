@@ -40,6 +40,7 @@ function DirectPlayer({ id, start, onEnded, onFail, loop, bare, paused, title = 
   const [panel, setPanel] = useState(false)
   const [audioSrc, setAudioSrc] = useState('')
   const readyFor = useRef('')
+  const triedQ = useRef<string[]>([])
   const [stats, setStats] = useState(settings.showStats)
   const mountAt = useRef(performance.now())
   const [marks, setMarks] = useState<Record<string, number>>({})
@@ -110,7 +111,7 @@ function DirectPlayer({ id, start, onEnded, onFail, loop, bare, paused, title = 
     // Notification et contrôles système (sauf Shorts) ; la musique se met en pause.
     const media = () => (document.hidden ? audio : video)
     const announce = () =>
-      !bare && setNowPlaying({ title: title || 'Youtmusic', artist, artwork: `https://i.ytimg.com/vi/${id}/hqdefault.jpg` }, !media().paused, { toggle: () => (media().paused ? media().play() : media().pause()) })
+      setNowPlaying({ title: title || (bare ? 'Short' : 'Youtmusic'), artist, artwork: `https://i.ytimg.com/vi/${id}/hqdefault.jpg` }, !media().paused, { toggle: () => (media().paused ? media().play() : media().pause()) })
     const onPlay = () => (pauseMusic(), announce())
     video.addEventListener('play', onPlay)
     video.addEventListener('pause', announce)
@@ -136,7 +137,7 @@ function DirectPlayer({ id, start, onEnded, onFail, loop, bare, paused, title = 
       document.removeEventListener('visibilitychange', onVis)
       video.removeEventListener('play', onPlay)
       video.removeEventListener('pause', announce)
-      if (!bare) clearNowPlaying()
+      clearNowPlaying()
       clearInterval(timer)
       clearInterval(fast)
       if (video.currentTime > 5) updatePosition(id, video.currentTime)
@@ -159,7 +160,15 @@ function DirectPlayer({ id, start, onEnded, onFail, loop, bare, paused, title = 
         onLoadedMetadata={(e) => ((e.currentTarget.playbackRate = settings.speed), mark('métadonnées'))}
         onPlaying={() => (mark('première image'), log(bare ? 'short' : 'vidéo', `${id} image ok, son ${a.current ? (a.current.paused ? 'EN PAUSE' : 'joue') : 'absent'}`))}
         onEnded={() => (updatePosition(id, 0), onEnded?.())}
-        onError={() => onFail('lecture refusée par le serveur vidéo')}
+        onError={() => {
+          // Qualité refusée par le serveur : on tente les autres avant de se replier.
+          const rest = s.qualities.filter((q) => q.url !== src && !triedQ.current.includes(q.url))
+          if (rest.length && triedQ.current.length < 3) {
+            triedQ.current.push(src)
+            log(bare ? 'short' : 'vidéo', `${id} qualité refusée, essai ${rest[0].height}p`)
+            setSrc(rest[0].url)
+          } else onFail('lecture refusée par le serveur vidéo')
+        }}
       />
       {s.audio && audioSrc && (
         <audio

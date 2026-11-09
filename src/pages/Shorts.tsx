@@ -102,6 +102,24 @@ function ShortSlide({ v, active, near }: { v: Video; active: boolean; near: bool
   )
 }
 
+const SEEN = 'youfree:seenShorts'
+const seenShorts = () => {
+  try {
+    return new Set<string>(JSON.parse(localStorage.getItem(SEEN) || '[]'))
+  } catch {
+    return new Set<string>()
+  }
+}
+const markSeen = (id: string) => {
+  const l = [...seenShorts()].filter((x) => x !== id)
+  l.push(id)
+  try {
+    localStorage.setItem(SEEN, JSON.stringify(l.slice(-600)))
+  } catch {
+    /* ignore */
+  }
+}
+
 export function Shorts() {
   const [params] = useSearchParams()
   const nav = useNavigate()
@@ -121,7 +139,11 @@ export function Shorts() {
     const lists = await Promise.all(keys.map((k) => getShorts(k).then((r) => r.videos, () => [] as Video[])))
     const out: Video[] = []
     for (let i = 0; i < 20; i++) for (const l of lists) if (l[i]) out.push(l[i])
-    return { videos: onlyLang(out, lang), next: 'more' }
+    // Ordre mélangé et Shorts déjà vus écartés : un fil neuf à chaque visite.
+    const seen = seenShorts()
+    const fresh = out.filter((v) => !seen.has(v.id))
+    const list = (fresh.length >= 4 ? fresh : out).sort(() => Math.random() - 0.5)
+    return { videos: onlyLang(list, lang), next: 'more' }
   }
   const [items, setItems] = useState<Video[]>([])
   const [next, setNext] = useState<string | undefined>()
@@ -190,6 +212,7 @@ export function Shorts() {
   }, [items, blocked])
 
   useEffect(() => {
+    if (active) markSeen(active)
     const i = items.findIndex((x) => x.id === active)
     if (i >= items.length - 4) loadMore()
     // Précharge les flux des deux Shorts suivants : le défilement est instantané.
