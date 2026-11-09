@@ -9,6 +9,7 @@ import { Comments } from '../components/Comments'
 import { toggleLike, useLiked, useBlocked, useSettings } from '../lib/storage'
 import { applyFilters, getComments, getShorts, getVideos, search, type Video } from '../lib/youtube'
 import { useAsync } from '../lib/useAsync'
+import { onlyLang } from '../lib/i18n'
 import { Sheet } from '../components/Sheet'
 import { VideoMenu, DownloadSheet } from '../components/VideoActions'
 import { toStored, Tr } from '../components/VideoCard'
@@ -110,7 +111,7 @@ export function Shorts() {
   const [q, setQ] = useState('')
   const [grid, setGrid] = useState(false)
   const blocked = useBlocked()
-  const { interests } = useSettings()
+  const { interests, lang } = useSettings()
   // Sans recherche : Shorts tirés de tes centres d'intérêt (3 thèmes au hasard, puis un nouveau à chaque page).
   const pick = () => interests[Math.floor(Math.random() * interests.length)]
   const load = async (token?: string) => {
@@ -120,7 +121,7 @@ export function Shorts() {
     const lists = await Promise.all(keys.map((k) => getShorts(k).then((r) => r.videos, () => [] as Video[])))
     const out: Video[] = []
     for (let i = 0; i < 20; i++) for (const l of lists) if (l[i]) out.push(l[i])
-    return { videos: out, next: 'more' }
+    return { videos: onlyLang(out, lang), next: 'more' }
   }
   const [items, setItems] = useState<Video[]>([])
   const [next, setNext] = useState<string | undefined>()

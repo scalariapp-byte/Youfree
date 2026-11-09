@@ -3,6 +3,7 @@ import { VideoCard, VideoGrid, Skeletons, ShortsShelf } from '../components/Vide
 import { ErrorBox } from '../components/ErrorBox'
 import { Infinite } from '../components/Infinite'
 import { useAsync } from '../lib/useAsync'
+import { onlyLang } from '../lib/i18n'
 import { useSettings, useBlocked } from '../lib/storage'
 import { getTrending, splitShorts, type Video } from '../lib/youtube'
 
@@ -21,7 +22,7 @@ export function Trending() {
     const r = await getTrending(cat, next)
     setExtra((e) => ({ videos: [...e.videos, ...r.videos], next: r.next ?? '' }))
   }
-  const split = splitShorts([...(res.data?.videos ?? []), ...extra.videos])
+  const split = splitShorts(onlyLang([...(res.data?.videos ?? []), ...extra.videos], settings.lang))
 
   return (
     <div className="page">

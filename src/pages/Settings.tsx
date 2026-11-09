@@ -293,6 +293,7 @@ export function Settings() {
                   </button>
                 ))}
               </div>
+              <Toggle on={s.strictLang} set={(v) => saveSettings({ strictLang: v })} label="Uniquement ma langue" hint="Accueil, Shorts et tendances : écarte les vidéos détectées dans une autre langue" />
               <label>Région</label>
               <select value={s.region} onChange={(e) => saveSettings({ region: e.target.value })}>
                 {REGIONS.map((r) => (

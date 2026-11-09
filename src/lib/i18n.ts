@@ -1,4 +1,5 @@
 import { INTERESTS } from './interests'
+import { getSettings } from './storage'
 // Langue des vidéos : région YouTube, mots-clés des thèmes, et priorité aux vidéos dans cette langue.
 export const LANGS: { code: string; label: string; flag: string; region: string }[] = [
   { code: 'fr', label: 'Français', flag: '🇫🇷', region: 'FR' },
@@ -78,7 +79,8 @@ export function prioritize<T extends { title: string; channelTitle?: string }>(l
 }
 
 /** Accueil : uniquement les vidéos détectées dans la langue choisie (s'il en reste assez). */
-export function onlyLang<T extends { title: string; channelTitle?: string }>(list: T[], lang: string, min = 6): T[] {
+export function onlyLang<T extends { title: string; channelTitle?: string }>(list: T[], lang: string, min = 3): T[] {
+  if (!getSettings().strictLang) return prioritize(list, lang)
   const mine = list.filter((v) => langScore(`${v.title} ${v.channelTitle ?? ''}`, lang) > 0)
   return mine.length >= min ? mine : prioritize(list, lang)
 }
