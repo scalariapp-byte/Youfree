@@ -96,7 +96,7 @@ function DirectPlayer({ id, start, onEnded, onFail, loop, bare, paused, title = 
     // Changement de qualité : on reprend là où on en était.
     const t0 = pos.current || video.currentTime || start
     video.currentTime = t0
-    if (!audio) return
+    if (!audio) return () => void (!document.hidden && video.pause())
     const sync = () => {
       if (document.hidden) return
       // Recalage seulement si l'écart est net et qu'aucun recalage n'est en cours.
@@ -165,6 +165,8 @@ function DirectPlayer({ id, start, onEnded, onFail, loop, bare, paused, title = 
       clearNowPlaying(video)
       clearInterval(timer)
       clearInterval(fast)
+      // Lecteur retiré de la page (autre onglet, Short suivant) : on coupe tout, sinon le son continue.
+      if (!document.hidden) (video.pause(), audio.pause())
       clearTimeout(stallTimer)
       video.removeEventListener('waiting', onWaiting)
       video.removeEventListener('playing', onFlow)
