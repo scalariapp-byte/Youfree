@@ -2,14 +2,11 @@
 import { useSyncExternalStore } from 'react'
 
 export interface Settings {
-  apiKey: string
-  clientId: string
   region: string
   showShorts: boolean
   theme: 'dark' | 'light' | 'system'
   hideGaming: boolean
   player: 'direct' | 'nocookie' | 'invidious'
-  source: 'auto' | 'api' | 'local'
   invidiousInstance: string
 }
 
@@ -34,14 +31,11 @@ export interface LocalChannel {
 }
 
 const DEFAULT_SETTINGS: Settings = {
-  apiKey: '',
-  clientId: '',
   region: 'FR',
   showShorts: true,
   theme: 'dark',
   hideGaming: false,
   player: 'direct',
-  source: 'auto',
   invidiousInstance: 'https://yewtu.be',
 }
 
@@ -134,7 +128,7 @@ export function importLocalSubs(channels: LocalChannel[]) {
 // ---- Export / import complet
 export function exportAll() {
   return JSON.stringify(
-    { version: 1, settings: { ...getSettings(), apiKey: '' }, history: getHistory(), watchLater: getWatchLater(), subs: getLocalSubs() },
+    { version: 1, settings: getSettings(), history: getHistory(), watchLater: getWatchLater(), subs: getLocalSubs() },
     null,
     2,
   )

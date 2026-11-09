@@ -1,7 +1,6 @@
 import { useState, type ChangeEvent } from 'react'
-import { useAuth } from '../lib/auth'
 import { exportAll, importAll, importLocalSubs, saveSettings, useLocalSubs, useSettings } from '../lib/storage'
-import { canUseLocal, isNative } from '../lib/nativeFetch'
+import { canUseLocal } from '../lib/nativeFetch'
 
 const REGIONS = ['FR', 'BE', 'CH', 'CA', 'LU', 'MA', 'SN', 'US', 'GB', 'DE', 'ES', 'IT']
 
@@ -26,9 +25,6 @@ function parseTakeout(csv: string) {
 export function Settings() {
   const s = useSettings()
   const subs = useLocalSubs()
-  const { user, signOut } = useAuth()
-  const [apiKey, setApiKey] = useState(s.apiKey)
-  const [clientId, setClientId] = useState(s.clientId)
   const [msg, setMsg] = useState('')
 
   const onFile = (kind: 'takeout' | 'backup') => async (e: ChangeEvent<HTMLInputElement>) => {
@@ -53,76 +49,6 @@ export function Settings() {
   return (
     <div className="page settings">
       <h1>Réglages</h1>
-
-      <section>
-        <h2>Source des vidéos</h2>
-        <label className="toggle">
-          <input type="radio" name="source" checked={s.source === 'auto'} onChange={() => saveSettings({ source: 'auto' })} />
-          Automatique (clé API ou compte Google si disponible, sinon sans clé)
-        </label>
-        <label className="toggle">
-          <input type="radio" name="source" checked={s.source === 'local'} disabled={!canUseLocal()} onChange={() => saveSettings({ source: 'local' })} />
-          Sans clé : le téléphone interroge YouTube directement (gratuit, sans quota)
-        </label>
-        <label className="toggle">
-          <input type="radio" name="source" checked={s.source === 'api'} onChange={() => saveSettings({ source: 'api' })} />
-          API officielle YouTube (clé API ou compte Google)
-        </label>
-        <p className="muted">
-          {isNative()
-            ? 'Mode sans clé disponible dans cette application.'
-            : canUseLocal()
-              ? 'Mode sans clé disponible (serveur de développement).'
-              : 'Mode sans clé indisponible dans un navigateur : le navigateur bloque les requêtes vers youtube.com. Installe l’application Android.'}
-        </p>
-        <a href="#/diagnostic" className="btn ghost">
-          Diagnostic
-        </a>
-      </section>
-
-      <section>
-        <h2>Accès à YouTube</h2>
-        <p className="muted">
-          Les données (recherche, tendances, chaînes) viennent de l’API officielle YouTube Data v3. Sans compte, une clé API est nécessaire ;
-          connecté avec Google, ton jeton suffit.
-        </p>
-        <label>
-          Clé API YouTube Data v3
-          <input type="password" value={apiKey} onChange={(e) => setApiKey(e.target.value)} placeholder="AIza…" autoComplete="off" />
-        </label>
-        <label>
-          ID client OAuth Google (pour « Se connecter »)
-          <input value={clientId} onChange={(e) => setClientId(e.target.value)} placeholder="xxxx.apps.googleusercontent.com" />
-        </label>
-        <button
-          className="btn"
-          onClick={() => {
-            saveSettings({ apiKey: apiKey.trim(), clientId: clientId.trim() })
-            setMsg('Enregistré. Recharge la page si la connexion Google ne s’affiche pas.')
-          }}
-        >
-          Enregistrer
-        </button>
-        <details>
-          <summary>Comment obtenir ces identifiants (5 min, gratuit)</summary>
-          <ol>
-            <li>
-              Ouvre <a href="https://console.cloud.google.com/" target="_blank" rel="noreferrer">console.cloud.google.com</a> et crée un projet.
-            </li>
-            <li>« API et services » → « Bibliothèque » → active <em>YouTube Data API v3</em>.</li>
-            <li>« Identifiants » → « Créer » → <em>Clé API</em>. Restreins-la à l’API YouTube et à l’adresse de ton site.</li>
-            <li>
-              Pour la connexion : « Écran de consentement OAuth » (type Externe, ajoute ton adresse en utilisateur test), puis « Créer » →{' '}
-              <em>ID client OAuth</em> → Application Web → origine autorisée : <code>{location.origin}</code>.
-            </li>
-          </ol>
-        </details>
-        {user && (
-          <p>
-            Connecté : <strong>{user.email}</strong> <button className="link" onClick={signOut}>Se déconnecter</button>
-          </p>
-        )}
-      </section>
 
       <section>
         <h2>Contenu</h2>
@@ -176,6 +102,13 @@ export function Settings() {
             <input value={s.invidiousInstance} onChange={(e) => saveSettings({ invidiousInstance: e.target.value })} placeholder="https://…" />
           </label>
         )}
+      </section>
+
+      <section>
+        <h2>Aide</h2>
+        <a href="#/diagnostic" className="btn ghost">
+          Diagnostic
+        </a>
       </section>
 
       <section>

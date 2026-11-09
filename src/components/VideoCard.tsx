@@ -1,4 +1,4 @@
-import { Children } from 'react'
+import { Children, memo } from 'react'
 import { Link } from 'react-router-dom'
 import { getVideos, type Video } from '../lib/youtube'
 import { prefetch } from '../lib/useAsync'
@@ -32,7 +32,7 @@ export function warm(id: string) {
   if (canUseLocal()) getStreams(id).catch(() => {})
 }
 
-export function VideoCard({ video, progress, subtitle, onRemove }: Props) {
+export const VideoCard = memo(function VideoCard({ video, progress, subtitle, onRemove }: Props) {
   const later = useWatchLater()
   const saved = later.some((x) => x.id === video.id)
   const full = 'views' in video ? video : null
@@ -44,7 +44,7 @@ export function VideoCard({ video, progress, subtitle, onRemove }: Props) {
   return (
     <article className="card" onPointerDown={() => warm(video.id)}>
       <Link to={`/watch/${video.id}${progress ? `?t=${Math.floor(progress)}` : ''}`} className="thumb">
-        <img src={video.thumbnail} alt="" loading="lazy" />
+        <Thumb id={video.id} fallback={video.thumbnail} />
         {full?.live ? <span className="badge live">EN DIRECT</span> : video.durationSec > 0 && <span className="badge">{duration(video.durationSec)}</span>}
         {pct > 0 && (
           <span className="progress">
@@ -81,6 +81,28 @@ export function VideoCard({ video, progress, subtitle, onRemove }: Props) {
         </div>
       </div>
     </article>
+  )
+})
+
+/** Miniature adaptée à l'écran : 320 px en liste, 1280 px en pleine largeur (sans bandes noires). */
+function Thumb({ id, fallback }: { id: string; fallback: string }) {
+  const base = `https://i.ytimg.com/vi/${id}/`
+  return (
+    <img
+      src={base + 'mqdefault.jpg'}
+      srcSet={`${base}mqdefault.jpg 320w, ${base}hq720.jpg 1280w`}
+      sizes="(max-width: 560px) 100vw, 360px"
+      alt=""
+      loading="lazy"
+      decoding="async"
+      onError={(e) => {
+        const img = e.currentTarget
+        if (img.srcset) {
+          img.srcset = ''
+          img.src = fallback || base + 'hqdefault.jpg'
+        }
+      }}
+    />
   )
 }
 

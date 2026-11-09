@@ -9,8 +9,7 @@ import { ThemeChips } from '../components/Themes'
 import { useAsync } from '../lib/useAsync'
 import { useAllSubs } from '../lib/useSubs'
 import { useHistory, useSettings } from '../lib/storage'
-import { getShorts, getSubscriptionFeed, getTrending, hasCredentials, splitShorts } from '../lib/youtube'
-import { useAuth } from '../lib/auth'
+import { getShorts, getSubscriptionFeed, getTrending, isAvailable, splitShorts } from '../lib/youtube'
 import { Onboarding } from './Onboarding'
 
 function ContinueWatching() {
@@ -33,17 +32,16 @@ function ContinueWatching() {
 }
 
 export function Home() {
-  useAuth() // re-rendu à la connexion
   const settings = useSettings()
   const { all, loading } = useAllSubs()
   const [cat, setCat] = useState<string | undefined>()
   const key = all.map((c) => c.id).join(',')
 
-  const feed = useAsync(() => (all.length ? getSubscriptionFeed(all) : Promise.resolve([])), [key, settings.hideGaming, settings.source], `feed:${settings.source}:${key}`)
-  const popular = useAsync(() => getTrending(cat), [cat, settings.region, settings.hideGaming, settings.source], `pop:${settings.source}:${settings.region}:${cat ?? ''}`)
-  const shorts = useAsync(() => (settings.showShorts ? getShorts(cat) : Promise.resolve({ videos: [], next: undefined })), [cat, settings.showShorts, settings.region, settings.source], `sh:${settings.source}:${settings.region}:${cat ?? ''}:${settings.showShorts}`)
+  const feed = useAsync(() => (all.length ? getSubscriptionFeed(all) : Promise.resolve([])), [key, settings.hideGaming], `feed:${key}`)
+  const popular = useAsync(() => getTrending(cat), [cat, settings.region, settings.hideGaming], `pop:${settings.region}:${cat ?? ''}`)
+  const shorts = useAsync(() => (settings.showShorts ? getShorts(cat) : Promise.resolve({ videos: [], next: undefined })), [cat, settings.showShorts, settings.region], `sh:${settings.region}:${cat ?? ''}:${settings.showShorts}`)
 
-  if (!hasCredentials()) return <Onboarding />
+  if (!isAvailable()) return <Onboarding />
 
   const subs = splitShorts(feed.data ?? [])
   const pop = splitShorts(popular.data?.videos ?? [])

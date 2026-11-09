@@ -1,11 +1,7 @@
-// Client minimal de l'API YouTube Data v3.
-import { accessToken } from './auth'
-import { apiKey } from './config'
+// Point d'entrée des données : tout passe par le téléphone (InnerTube via youtubei.js),
+// sans clé ni quota. Le module lourd est chargé une seule fois, dès le démarrage.
 import { getSettings, type LocalChannel } from './storage'
 import { canUseLocal } from './nativeFetch'
-const loadLocal = () => import('./innertube')
-
-const BASE = 'https://www.googleapis.com/youtube/v3/'
 
 export interface Video {
   id: string
@@ -42,83 +38,16 @@ export interface Comment {
   publishedAt: string
 }
 
-export class ApiError extends Error {
-  constructor(
-    message: string,
-    public code: 'nokey' | 'quota' | 'auth' | 'other',
-  ) {
-    super(message)
-  }
-}
+export type SearchFilter = '' | 'short' | 'long' | 'today' | 'week' | 'month' | 'popular'
 
-/**
- * Source des données :
- * - « api »   : API officielle (clé API ou compte Google), avec quota.
- * - « local » : le téléphone interroge YouTube directement, sans clé (app Android uniquement).
- * - « auto »  : API si une clé ou un compte est disponible, sinon local si possible.
- */
-export function useLocal() {
-  const { source } = getSettings()
-  if (source === 'local') return canUseLocal()
-  if (source === 'api') return false
-  return !apiKey() && !accessToken() && canUseLocal()
-}
+const local = () => import('./innertube')
+/** Préchauffage : charge le module et ouvre la session YouTube pendant l'affichage. */
+export const warmUp = () => canUseLocal() && local().then((m) => m.warm()).catch(() => {})
 
-export const hasCredentials = () => !!(apiKey() || accessToken()) || useLocal()
+export const isAvailable = canUseLocal
+export const uploadsOf = (channelId: string) => 'UU' + channelId.slice(2)
 
-async function call<T = any>(path: string, params: Record<string, string | number | undefined>, needAuth = false): Promise<T> {
-  const url = new URL(BASE + path)
-  Object.entries(params).forEach(([k, v]) => v !== undefined && v !== '' && url.searchParams.set(k, String(v)))
-  const headers: Record<string, string> = {}
-  const token = accessToken()
-  if (token) headers.Authorization = `Bearer ${token}`
-  else if (needAuth) throw new ApiError('Connexion Google requise', 'auth')
-  else if (apiKey()) url.searchParams.set('key', apiKey())
-  else throw new ApiError('Aucune clé API configurée', 'nokey')
-
-  const res = await fetch(url, { headers })
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({}))
-    const reason = body?.error?.errors?.[0]?.reason as string | undefined
-    const msg = body?.error?.message || `Erreur ${res.status}`
-    if (reason === 'quotaExceeded' || reason === 'dailyLimitExceeded') throw new ApiError('Quota quotidien de l’API dépassé (remis à zéro à 9h, heure de Paris).', 'quota')
-    if (res.status === 401) throw new ApiError('Session Google expirée, reconnecte-toi.', 'auth')
-    throw new ApiError(msg, 'other')
-  }
-  return res.json()
-}
-
-export function parseDuration(iso = ''): number {
-  const m = iso.match(/P(?:(\d+)D)?T?(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/)
-  if (!m) return 0
-  const [, d, h, mi, s] = m.map((x) => Number(x) || 0)
-  return d * 86400 + h * 3600 + mi * 60 + s
-}
-
-const bestThumb = (t: any) => t?.maxres?.url || t?.high?.url || t?.medium?.url || t?.default?.url || ''
-
-function toVideo(item: any): Video {
-  const s = item.snippet ?? {}
-  return {
-    id: typeof item.id === 'string' ? item.id : item.id?.videoId,
-    title: s.title ?? '',
-    description: s.description ?? '',
-    channelId: s.channelId ?? '',
-    channelTitle: s.channelTitle ?? '',
-    publishedAt: s.publishedAt ?? '',
-    thumbnail: bestThumb(s.thumbnails),
-    durationSec: parseDuration(item.contentDetails?.duration),
-    views: Number(item.statistics?.viewCount ?? 0),
-    likes: Number(item.statistics?.likeCount ?? 0),
-    categoryId: s.categoryId ?? '',
-    live: s.liveBroadcastContent === 'live' || s.liveBroadcastContent === 'upcoming',
-  }
-}
-
-// Catégorie 20 = « Jeux vidéo ».
 export const GAMING_CATEGORY = '20'
-
-/** Applique les filtres utilisateur (catégorie Jeux vidéo). */
 export function applyFilters(videos: Video[]): Video[] {
   const { hideGaming } = getSettings()
   return videos.filter((v) => v.id && !(hideGaming && v.categoryId === GAMING_CATEGORY))
@@ -127,262 +56,55 @@ export function applyFilters(videos: Video[]): Video[] {
 export const isShortVideo = (v: Video) =>
   !!v.isShort || (!v.live && v.durationSec > 0 && v.durationSec <= 60) || /#shorts?\b/i.test(v.title)
 
-/** Sépare les Shorts des vidéos classiques : ils ont leur propre étagère et leur lecteur vertical. */
+/** Sépare Shorts et vidéos classiques, sans doublons. */
 export function splitShorts(list: Video[]) {
   const videos: Video[] = []
   const shorts: Video[] = []
   const seen = new Set<string>()
-  list.forEach((v) => {
-    if (seen.has(v.id)) return
+  for (const v of list) {
+    if (seen.has(v.id)) continue
     seen.add(v.id)
     ;(isShortVideo(v) ? shorts : videos).push(v)
-  })
+  }
   return { videos, shorts }
 }
 
-/** Détails complets de vidéos (50 max par appel, 1 unité de quota). */
-export async function getVideos(ids: string[]): Promise<Video[]> {
-  if (useLocal()) return (async () => { const l = await loadLocal(); return Promise.all(ids.map((id) => l.video(id))) })()
-  const out: Video[] = []
-  for (let i = 0; i < ids.length; i += 50) {
-    const chunk = ids.slice(i, i + 50)
-    const data = await call('videos', { part: 'snippet,contentDetails,statistics', id: chunk.join(','), maxResults: 50 })
-    out.push(...data.items.map(toVideo))
-  }
-  const order = new Map(ids.map((id, i) => [id, i]))
-  return out.sort((a, b) => (order.get(a.id) ?? 0) - (order.get(b.id) ?? 0))
-}
-
-export async function getTrending(categoryId?: string, pageToken?: string) {
-  if (useLocal()) {
-    const r = await (await loadLocal()).trending(categoryId, pageToken)
-    return { videos: applyFilters(r.videos), next: r.next }
-  }
-  const data = await call('videos', {
-    part: 'snippet,contentDetails,statistics',
-    chart: 'mostPopular',
-    regionCode: getSettings().region,
-    videoCategoryId: categoryId,
-    maxResults: 36,
-    pageToken,
-  })
-  return { videos: applyFilters(data.items.map(toVideo)), next: data.nextPageToken as string | undefined }
-}
-
-/** Recherche (100 unités de quota) + détails (1 unité). */
-/** Filtres de recherche : durée, date, popularité. */
-export type SearchFilter = '' | 'short' | 'long' | 'today' | 'week' | 'month' | 'popular'
-
-export async function suggest(q: string): Promise<string[]> {
-  if (!q.trim() || !useLocal()) return []
-  return (await loadLocal()).suggest(q)
-}
-
-export async function search(q: string, pageToken?: string, filter: SearchFilter = '') {
-  if (useLocal()) {
-    const r = await (await loadLocal()).search(q, pageToken, filter)
-    return { videos: applyFilters(r.videos), next: r.next }
-  }
-  const data = await call('search', {
-    part: 'snippet',
-    type: 'video',
-    q,
-    maxResults: 30,
-    regionCode: getSettings().region,
-    relevanceLanguage: 'fr',
-    safeSearch: 'none',
-    pageToken,
-    order: filter === 'popular' ? 'viewCount' : undefined,
-    videoDuration: filter === 'short' ? 'short' : filter === 'long' ? 'long' : undefined,
-    publishedAfter: { today: 1, week: 7, month: 30 }[filter as 'today'] ? new Date(Date.now() - { today: 1, week: 7, month: 30 }[filter as 'today'] * 86400_000).toISOString() : undefined,
-  })
-  const ids = data.items.map((i: any) => i.id.videoId).filter(Boolean)
-  const videos = ids.length ? await getVideos(ids) : []
-  return { videos: applyFilters(videos), next: data.nextPageToken as string | undefined }
-}
-
-export async function getChannel(id: string): Promise<Channel> {
-  if (useLocal()) return (await loadLocal()).channel(id)
-  const data = await call('channels', { part: 'snippet,statistics,contentDetails,brandingSettings', id })
-  const c = data.items?.[0]
-  if (!c) throw new ApiError('Chaîne introuvable', 'other')
-  return {
-    id: c.id,
-    title: c.snippet.title,
-    description: c.snippet.description,
-    thumbnail: bestThumb(c.snippet.thumbnails),
-    subscribers: Number(c.statistics.subscriberCount ?? 0),
-    videoCount: Number(c.statistics.videoCount ?? 0),
-    banner: c.brandingSettings?.image?.bannerExternalUrl,
-    uploadsPlaylist: c.contentDetails.relatedPlaylists.uploads,
-  }
-}
-
-/** Les playlists d'uploads ont l'ID de la chaîne avec « UU » au lieu de « UC ». */
-export const uploadsOf = (channelId: string) => 'UU' + channelId.slice(2)
-
-export async function getPlaylistVideos(playlistId: string, max = 24, pageToken?: string) {
-  if (useLocal()) return (await loadLocal()).playlistVideos(playlistId, max, pageToken)
-  const data = await call('playlistItems', { part: 'contentDetails', playlistId, maxResults: Math.min(max, 50), pageToken })
-  const ids = data.items.map((i: any) => i.contentDetails.videoId)
-  const videos = ids.length ? await getVideos(ids) : []
-  return { videos, next: data.nextPageToken as string | undefined }
-}
-
-export async function getComments(videoId: string): Promise<Comment[]> {
-  if (useLocal()) return (await loadLocal()).comments(videoId)
-  try {
-    const data = await call('commentThreads', { part: 'snippet', videoId, maxResults: 30, order: 'relevance', textFormat: 'plainText' })
-    return data.items.map((t: any) => {
-      const s = t.snippet.topLevelComment.snippet
-      return {
-        id: t.id,
-        author: s.authorDisplayName,
-        authorAvatar: s.authorProfileImageUrl,
-        text: s.textDisplay,
-        likes: s.likeCount,
-        publishedAt: s.publishedAt,
-      }
-    })
-  } catch (e) {
-    if ((e as ApiError).code === 'other') return [] // commentaires désactivés
-    throw e
-  }
-}
-
-// ---------- Shorts
-
 const SHORTS_QUERIES: Record<string, string> = {
-  '': 'shorts',
-  '10': 'musique shorts',
-  '25': 'actualité shorts',
-  '28': 'tech shorts',
-  '27': 'apprendre shorts',
-  '17': 'sport shorts',
-  '24': 'drôle shorts',
-  '23': 'humour shorts',
-  '1': 'film shorts',
-  '26': 'recette shorts',
-  '2': 'voiture shorts',
+  '': 'shorts', '10': 'musique shorts', '25': 'actualité shorts', '28': 'tech shorts', '27': 'apprendre shorts',
+  '17': 'sport shorts', '24': 'drôle shorts', '23': 'humour shorts', '1': 'film shorts', '26': 'recette shorts', '2': 'voiture shorts',
 }
 
-export async function getShorts(categoryId?: string, pageToken?: string) {
-  const q = SHORTS_QUERIES[categoryId ?? ''] ?? SHORTS_QUERIES['']
-  if (useLocal()) {
-    const r = await (await loadLocal()).shorts(q, pageToken)
-    return { videos: applyFilters(r.videos), next: r.next }
-  }
-  const data = await call('search', {
-    part: 'snippet',
-    type: 'video',
-    videoDuration: 'short',
-    q: q.replace('shorts', '#shorts'),
-    maxResults: 30,
-    regionCode: getSettings().region,
-    pageToken,
-  })
-  const ids = data.items.map((i: any) => i.id.videoId).filter(Boolean)
-  const videos = (ids.length ? await getVideos(ids) : []).filter((v) => v.durationSec > 0 && v.durationSec <= 180)
-  return { videos: applyFilters(videos.map((v) => ({ ...v, isShort: true }))), next: data.nextPageToken as string | undefined }
+const filtered = async (p: Promise<{ videos: Video[]; next?: string }>) => {
+  const r = await p
+  return { videos: applyFilters(r.videos), next: r.next }
 }
 
-export async function getChannelShorts(channelId: string) {
-  if (useLocal()) return (await loadLocal()).channelShorts(channelId)
-  const r = await getPlaylistVideos(uploadsOf(channelId), 50)
-  return { videos: r.videos.filter(isShortVideo), next: undefined as string | undefined }
+export const getVideos = async (ids: string[]) => {
+  const l = await local()
+  return Promise.all(ids.map((id) => l.video(id)))
 }
-
-// ---------- Compte Google
-
-export async function getMySubscriptions(): Promise<LocalChannel[]> {
-  const out: LocalChannel[] = []
-  let pageToken: string | undefined
-  do {
-    const data = await call('subscriptions', { part: 'snippet', mine: 'true', maxResults: 50, order: 'alphabetical', pageToken }, true)
-    out.push(
-      ...data.items.map((s: any) => ({
-        id: s.snippet.resourceId.channelId,
-        title: s.snippet.title,
-        thumbnail: bestThumb(s.snippet.thumbnails),
-      })),
-    )
-    pageToken = data.nextPageToken
-  } while (pageToken && out.length < 1000)
-  return out
-}
-
-export async function getLikedVideos(pageToken?: string) {
-  const data = await call('videos', { part: 'snippet,contentDetails,statistics', myRating: 'like', maxResults: 36, pageToken }, true)
-  return { videos: data.items.map(toVideo) as Video[], next: data.nextPageToken as string | undefined }
-}
-
-export interface Playlist {
-  id: string
-  title: string
-  thumbnail: string
-  count: number
-}
-export async function getMyPlaylists(): Promise<Playlist[]> {
-  const data = await call('playlists', { part: 'snippet,contentDetails', mine: 'true', maxResults: 50 }, true)
-  return data.items.map((p: any) => ({ id: p.id, title: p.snippet.title, thumbnail: bestThumb(p.snippet.thumbnails), count: p.contentDetails.itemCount }))
-}
-
-// ---------- Fil d'abonnements chronologique (sans algorithme)
+export const getTrending = async (cat?: string, token?: string) => filtered((await local()).trending(cat, token))
+export const search = async (q: string, token?: string, filter: SearchFilter = '') => filtered((await local()).search(q, token, filter))
+export const suggest = async (q: string) => (q.trim() ? (await local()).suggest(q) : [])
+export const getChannel = async (id: string) => (await local()).channel(id)
+export const getPlaylistVideos = async (id: string, max = 30, token?: string) => (await local()).playlistVideos(id, max, token)
+export const getComments = async (id: string) => (await local()).comments(id)
+export const getShorts = async (cat?: string, token?: string) => filtered((await local()).shorts(SHORTS_QUERIES[cat ?? ''] ?? 'shorts', token))
+export const getChannelShorts = async (id: string) => (await local()).channelShorts(id)
 
 const FEED_CACHE = 'youfree:feed'
-const FEED_TTL = 15 * 60 * 1000
-
-async function pool<T, R>(items: T[], size: number, fn: (t: T) => Promise<R>): Promise<R[]> {
-  const results: R[] = []
-  let i = 0
-  await Promise.all(
-    Array.from({ length: Math.min(size, items.length) }, async () => {
-      while (i < items.length) {
-        const item = items[i++]
-        try {
-          results.push(await fn(item))
-        } catch (e) {
-          if ((e as ApiError).code === 'quota') throw e
-        }
-      }
-    }),
-  )
-  return results
-}
-
-/**
- * Récupère les dernières vidéos de chaque chaîne (1 unité par chaîne)
- * et les trie par date de publication. Mis en cache 15 min.
- */
+/** Fil d'abonnements chronologique, mis en cache 15 min. */
 export async function getSubscriptionFeed(channels: LocalChannel[], force = false): Promise<Video[]> {
-  const key = (useLocal() ? 'local:' : 'api:') + channels.map((c) => c.id).sort().join(',')
+  const key = channels.map((c) => c.id).sort().join(',')
   if (!force) {
     try {
-      const cached = JSON.parse(sessionStorage.getItem(FEED_CACHE) || 'null')
-      if (cached && cached.key === key && Date.now() - cached.at < FEED_TTL) return applyFilters(cached.videos)
+      const c = JSON.parse(sessionStorage.getItem(FEED_CACHE) || 'null')
+      if (c?.key === key && Date.now() - c.at < 15 * 60_000) return applyFilters(c.videos)
     } catch {
       /* ignore */
     }
   }
-  if (useLocal()) {
-    const videos = await (await loadLocal()).subscriptionFeed(channels)
-    try {
-      sessionStorage.setItem(FEED_CACHE, JSON.stringify({ key, at: Date.now(), videos }))
-    } catch {
-      /* ignore */
-    }
-    return applyFilters(videos)
-  }
-  const lists = await pool(channels, 8, async (c) => {
-    const data = await call('playlistItems', { part: 'contentDetails', playlistId: uploadsOf(c.id), maxResults: 6 })
-    return data.items.map((i: any) => ({ id: i.contentDetails.videoId as string, at: i.contentDetails.videoPublishedAt as string }))
-  })
-  const recent = lists
-    .flat()
-    .filter((x) => x.at)
-    .sort((a, b) => b.at.localeCompare(a.at))
-    .slice(0, 150)
-  const videos = await getVideos(recent.map((x) => x.id))
+  const videos = await (await local()).subscriptionFeed(channels)
   try {
     sessionStorage.setItem(FEED_CACHE, JSON.stringify({ key, at: Date.now(), videos }))
   } catch {

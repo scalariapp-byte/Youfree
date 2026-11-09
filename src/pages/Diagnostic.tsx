@@ -3,7 +3,6 @@
 import { useState } from 'react'
 import { Capacitor } from '@capacitor/core'
 import { localFetch, canUseLocal, isNative } from '../lib/nativeFetch'
-import { useLocal, hasCredentials } from '../lib/youtube'
 import { getSettings } from '../lib/storage'
 
 interface Step {
@@ -63,7 +62,7 @@ export function Diagnostic() {
       status: 'ok',
       detail: [
         `plateforme=${Capacitor.getPlatform()} natif=${isNative()} sansCléPossible=${canUseLocal()}`,
-        `source=${st.source} modeSansClé=${useLocal()} identifiants=${hasCredentials()} région=${st.region}`,
+        `région=${st.region} lecteur=${st.player}`,
         `shorts=${st.showShorts} jeux masqués=${st.hideGaming}`,
         `navigateur=${navigator.userAgent}`,
       ].join('\n'),

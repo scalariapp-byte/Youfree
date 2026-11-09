@@ -14,7 +14,7 @@ export function Subscriptions() {
   const [tab, setTab] = useState<'feed' | 'channels'>('feed')
   const [force, setForce] = useState(0)
   const key = all.map((c) => c.id).join(',')
-  const feed = useAsync(() => (all.length ? getSubscriptionFeed(all, force > 0) : Promise.resolve([])), [key, force, settings.hideGaming, settings.source])
+  const feed = useAsync(() => (all.length ? getSubscriptionFeed(all, force > 0) : Promise.resolve([])), [key, force, settings.hideGaming])
 
   if (!all.length && !loading)
     return (

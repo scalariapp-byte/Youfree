@@ -208,6 +208,10 @@ const THEME_QUERIES: Record<string, string> = {
   '2': 'auto essai',
 }
 
+/** Ouvre la session à l'avance pour que la première requête soit immédiate. */
+export const warm = () => yt()
+export const getClient = () => yt()
+
 export async function trending(categoryId?: string, pageToken?: string) {
   if (pageToken && continuations.has(pageToken)) {
     const r = await resume(pageToken)

@@ -1,7 +1,5 @@
 // Lecture sans pub : le téléphone récupère lui-même les flux vidéo/audio (client ANDROID_VR,
 // qui renvoie des URL directes) et les lit dans des balises <video>/<audio>. Pas de lecteur YouTube.
-import { Innertube } from 'youtubei.js/web'
-import { localFetch } from './nativeFetch'
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export interface Streams {
@@ -11,14 +9,13 @@ export interface Streams {
   qualities: { height: number; url: string }[]
 }
 
-let yt: Promise<Innertube> | null = null
 const cache = new Map<string, Promise<Streams>>()
 
 export function getStreams(id: string): Promise<Streams> {
   if (!cache.has(id)) {
     const p = (async () => {
-      yt ??= Innertube.create({ retrieve_player: false, generate_session_locally: true, fetch: localFetch })
-      const info: any = await (await yt).getBasicInfo(id, { client: 'ANDROID_VR' })
+      const yt = await (await import('./innertube')).getClient()
+      const info: any = await yt.getBasicInfo(id, { client: 'ANDROID_VR' })
       const sd = info.streaming_data
       if (!sd) throw new Error(info.playability_status?.reason || 'Flux indisponible')
       const adaptive: any[] = (sd.adaptive_formats ?? []).filter((f: any) => f.url)

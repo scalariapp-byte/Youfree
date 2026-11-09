@@ -432,3 +432,8 @@ button.pill:hover { background: var(--surface-3); }
 .card:active .thumb { transform: scale(.98); }
 .section-head h2 { font-size: 1.2rem; font-weight: 750; }
 .chip.on { box-shadow: 0 4px 14px color-mix(in srgb, var(--text) 18%, transparent); }
+
+/* ============ Performance : les cartes hors écran ne sont ni calculées ni peintes ============ */
+.grid > .card, .watch-side .card, .comment { content-visibility: auto; contain-intrinsic-size: auto 320px; }
+.watch-side .card { contain-intrinsic-size: auto 96px; }
+.comment { contain-intrinsic-size: auto 80px; }

@@ -23,10 +23,22 @@ function load(key: string) {
   return undefined
 }
 
+const MAX_ENTRIES = 80
+
 function store(key: string, data: unknown) {
   const v = { at: Date.now(), data }
   mem.set(key, v)
+  if (mem.size > MAX_ENTRIES) mem.delete(mem.keys().next().value!)
   try {
+    // Cache disque plafonné : on supprime les entrées les plus anciennes.
+    const keys = Object.keys(localStorage).filter((k) => k.startsWith(LS))
+    if (keys.length >= MAX_ENTRIES) {
+      keys
+        .map((k) => [k, JSON.parse(localStorage.getItem(k) || '{"at":0}').at as number] as const)
+        .sort((a, b) => a[1] - b[1])
+        .slice(0, keys.length - MAX_ENTRIES + 10)
+        .forEach(([k]) => localStorage.removeItem(k))
+    }
     localStorage.setItem(LS + key, JSON.stringify(v))
   } catch {
     // Stockage plein : on vide l'ancien cache.

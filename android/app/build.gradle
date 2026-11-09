@@ -20,6 +20,12 @@ android {
     // génère une nouvelle clé et Android refuse d'installer la mise à jour par-dessus.
     // Clé publique dans le dépôt = APK de test uniquement, pas pour une publication.
     signingConfigs {
+        release {
+            storeFile file('youfree-test.keystore')
+            storePassword 'youfree-test'
+            keyAlias 'youfree'
+            keyPassword 'youfree-test'
+        }
         debug {
             storeFile file('youfree-test.keystore')
             storePassword 'youfree-test'
@@ -29,6 +35,7 @@ android {
     }
     buildTypes {
         release {
+            signingConfig signingConfigs.release
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }

@@ -1,22 +1,27 @@
+import { lazy, Suspense } from 'react'
 import { HashRouter, Route, Routes } from 'react-router-dom'
-import { AuthProvider } from './lib/auth'
 import { Layout } from './components/Layout'
 import { Home } from './pages/Home'
-import { Trending } from './pages/Trending'
-import { Search } from './pages/Search'
-import { Watch } from './pages/Watch'
-import { Channel } from './pages/Channel'
-import { Subscriptions } from './pages/Subscriptions'
-import { Library } from './pages/Library'
-import { Settings } from './pages/Settings'
-import { Diagnostic } from './pages/Diagnostic'
-import { Shorts } from './pages/Shorts'
+
+// Pages secondaires chargées à la demande : démarrage plus rapide.
+const Watch = lazy(() => import('./pages/Watch').then((m) => ({ default: m.Watch })))
+const Shorts = lazy(() => import('./pages/Shorts').then((m) => ({ default: m.Shorts })))
+const Search = lazy(() => import('./pages/Search').then((m) => ({ default: m.Search })))
+const Trending = lazy(() => import('./pages/Trending').then((m) => ({ default: m.Trending })))
+const Channel = lazy(() => import('./pages/Channel').then((m) => ({ default: m.Channel })))
+const Subscriptions = lazy(() => import('./pages/Subscriptions').then((m) => ({ default: m.Subscriptions })))
+const Library = lazy(() => import('./pages/Library').then((m) => ({ default: m.Library })))
+const Settings = lazy(() => import('./pages/Settings').then((m) => ({ default: m.Settings })))
+const Diagnostic = lazy(() => import('./pages/Diagnostic').then((m) => ({ default: m.Diagnostic })))
+
+// Précharge les pages les plus utilisées dès que l'accueil est affiché.
+setTimeout(() => [import('./pages/Watch'), import('./pages/Shorts'), import('./pages/Search')], 1500)
 
 export default function App() {
   return (
-    <AuthProvider>
-      <HashRouter>
-        <Layout>
+    <HashRouter>
+      <Layout>
+        <Suspense fallback={<div className="page" />}>
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/shorts" element={<Shorts />} />
@@ -30,8 +35,8 @@ export default function App() {
             <Route path="/diagnostic" element={<Diagnostic />} />
             <Route path="*" element={<Home />} />
           </Routes>
-        </Layout>
-      </HashRouter>
-    </AuthProvider>
+        </Suspense>
+      </Layout>
+    </HashRouter>
   )
 }

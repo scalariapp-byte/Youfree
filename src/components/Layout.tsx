@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react'
 import { Link, NavLink, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
-import { useAuth } from '../lib/auth'
 import { useAllSubs } from '../lib/useSubs'
 import { useSettings } from '../lib/storage'
 import { Icon } from './Icon'
@@ -122,33 +121,6 @@ function SearchBar({ onDone, autoFocus }: { onDone?: () => void; autoFocus?: boo
   )
 }
 
-function Account() {
-  const { user, available, signIn, signOut, error } = useAuth()
-  if (user)
-    return (
-      <div className="account">
-        <button className="avatar-btn" aria-label="Compte">
-          <img src={user.picture} alt="" referrerPolicy="no-referrer" />
-        </button>
-        <div className="account-menu">
-          <div>
-            <strong>{user.name}</strong>
-            <small>{user.email}</small>
-          </div>
-          <Link to="/settings">Réglages</Link>
-          <button onClick={signOut}>Se déconnecter</button>
-        </div>
-      </div>
-    )
-  if (available)
-    return (
-      <button className="btn small" onClick={signIn} title={error ?? ''}>
-        <Icon name="user" size={16} /> Connexion
-      </button>
-    )
-  return null
-}
-
 const NAV = [
   { to: '/', icon: 'home', label: 'Accueil', end: true },
   { to: '/shorts', icon: 'shorts', label: 'Shorts' },
@@ -190,7 +162,6 @@ export function Layout({ children }: { children: ReactNode }) {
               <Link to="/settings" className="icon-btn" aria-label="Réglages">
                 <Icon name="settings" />
               </Link>
-              <Account />
             </div>
           </>
         )}

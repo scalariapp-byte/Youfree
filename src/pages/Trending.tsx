@@ -11,10 +11,10 @@ export function Trending() {
   const [cat, setCat] = useState<string | undefined>()
   const [extra, setExtra] = useState<{ videos: Video[]; next?: string }>({ videos: [] })
   const settings = useSettings()
-  useEffect(() => setExtra({ videos: [] }), [cat, settings.region, settings.hideGaming, settings.source])
+  useEffect(() => setExtra({ videos: [] }), [cat, settings.region, settings.hideGaming])
   const res = useAsync(() => {
     return getTrending(cat)
-  }, [cat, settings.region, settings.hideGaming, settings.source], `pop:${settings.source}:${settings.region}:${cat ?? ''}`)
+  }, [cat, settings.region, settings.hideGaming], `pop:${settings.region}:${cat ?? ''}`)
 
   const next = extra.next ?? res.data?.next
   const more = async () => {

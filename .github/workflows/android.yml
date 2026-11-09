@@ -33,13 +33,13 @@ jobs:
       - name: Notes de version
         run: echo "NOTES=$(git log -1 --pretty=%s)" >> $GITHUB_ENV
       - run: npx cap sync android
-      - name: Gradle assembleDebug
+      - name: Gradle assembleRelease
         working-directory: android
         # Le téléchargement de Gradle renvoie parfois 504 : jusqu'à 3 tentatives.
         run: |
-          for i in 1 2 3; do ./gradlew assembleDebug --no-daemon -PversionCode=${{ github.run_number }} && exit 0; echo "Tentative $i échouée"; sleep $((i*20)); done
+          for i in 1 2 3; do ./gradlew assembleRelease --no-daemon -PversionCode=${{ github.run_number }} && exit 0; echo "Tentative $i échouée"; sleep $((i*20)); done
           exit 1
-      - run: cp android/app/build/outputs/apk/debug/app-debug.apk youfree.apk
+      - run: cp android/app/build/outputs/apk/release/app-release.apk youfree.apk
       - uses: actions/upload-artifact@v4
         with:
           name: youfree-apk
