@@ -678,3 +678,17 @@ body { background: var(--bg); }
 .music-progress span { display: block; height: 100%; background: var(--accent); }
 @media (min-width: 861px) { .music-bar { left: calc(var(--side) + 20px); right: 20px; bottom: 20px; } }
 .immersive .music-bar { display: none; }
+
+/* ============ Écran fixe : aucun défilement horizontal ============ */
+html, body { overflow-x: hidden; max-width: 100%; }
+.app, .content { overflow-x: clip; }
+body { touch-action: pan-y; }
+
+/* ============ Shorts : page fixée, barre de recherche et boutons toujours au premier plan ============ */
+.shorts-page { position: fixed; inset: 0 0 0 var(--side); height: auto; z-index: 30; }
+.shorts-top { z-index: 20; }
+.short-overlay { z-index: 10; }
+.short-frame { z-index: 1; }
+@media (max-width: 860px) {
+  .shorts-page { left: 0; bottom: calc(var(--tab) + 20px + env(safe-area-inset-bottom)); height: auto; }
+}

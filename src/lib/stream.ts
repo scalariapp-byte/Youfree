@@ -39,9 +39,17 @@ async function fetchStreams(id: string): Promise<Streams> {
         .map((f: any) => ({ url: f.url, height: f.height ?? 0, mime: f.mime_type ?? '', bitrate: f.bitrate ?? 0, audio: !!f.has_audio, video: !!f.has_video }))
       const hls: string | undefined = sd.hls_manifest_url && canHls() ? sd.hls_manifest_url : undefined
       if (!formats.length && !hls) throw new Error('URL chiffrées')
-      const audio = formats.filter((f) => f.audio && !f.video && /mp4/.test(f.mime)).sort((a, b) => b.bitrate - a.bitrate)[0]
+      const audio = formats.filter((f) => f.audio && !f.video).sort((a, b) => (/mp4/.test(b.mime) ? 1 : 0) - (/mp4/.test(a.mime) ? 1 : 0) || b.bitrate - a.bitrate)[0]
       const byH = new Map<number, Fmt>()
-      formats.filter((f) => f.video && !f.audio && /avc1/.test(f.mime)).forEach((f) => (!byH.has(f.height) || f.bitrate > byH.get(f.height)!.bitrate) && byH.set(f.height, f))
+      // Tous les codecs lisibles par le téléphone (H.264, VP9, AV1) ; à hauteur égale on préfère H.264 puis VP9.
+      const probe = document.createElement('video')
+      const rank = (f: Fmt) => (/avc1/.test(f.mime) ? 3 : /vp0?9/.test(f.mime) ? 2 : 1)
+      formats
+        .filter((f) => f.video && !f.audio && probe.canPlayType(f.mime.replace(/\+/g, ' ')))
+        .forEach((f) => {
+          const cur = byH.get(f.height)
+          if (!cur || rank(f) > rank(cur) || (rank(f) === rank(cur) && f.bitrate > cur.bitrate)) byH.set(f.height, f)
+        })
       const qualities = [...byH.values()].sort((a, b) => b.height - a.height).map((f) => ({ height: f.height, url: f.url }))
       if (audio && qualities.length) {
         const pick = qualities.find((q) => q.height <= 720) ?? qualities[qualities.length - 1]
@@ -71,10 +79,11 @@ export function getStreams(id: string): Promise<Streams> {
 /** Options de téléchargement : meilleure vidéo par hauteur (jusqu'à 4K) + piste audio compatible. */
 export function downloadOptions(s: Streams) {
   const best = new Map<number, Fmt>()
-  for (const f of s.formats.filter((f) => f.video && !f.audio && !/av01/.test(f.mime))) {
+  for (const f of s.formats.filter((f) => f.video && !f.audio)) {
     const cur = best.get(f.height)
     // VP9 (webm) au-delà de 1080p, H.264 (mp4) sinon : compatibles avec le multiplexeur Android.
-    const pref = (x: Fmt) => (x.height > 1080 ? /vp9|vp09/.test(x.mime) : /avc1/.test(x.mime)) ? 1 : 0
+    // H.264 puis VP9 puis AV1 (AV1 assemblé en MP4 : Android 14 et plus).
+    const pref = (x: Fmt) => (/avc1/.test(x.mime) ? 3 : /vp0?9/.test(x.mime) ? 2 : 1)
     if (!cur || pref(f) > pref(cur) || (pref(f) === pref(cur) && f.bitrate > cur.bitrate)) best.set(f.height, f)
   }
   return [...best.values()]

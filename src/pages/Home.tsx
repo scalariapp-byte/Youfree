@@ -1,11 +1,9 @@
 // Accueil : thèmes en haut, puis Reprendre, Shorts, Nouveautés des abonnements, Populaire.
 // Pas d'algorithme opaque, pas de jeux.
-import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ago } from '../lib/format'
 import { VideoCard, VideoGrid, Skeletons, ShortsShelf } from '../components/VideoCard'
 import { ErrorBox } from '../components/ErrorBox'
-import { ThemeChips } from '../components/Themes'
 import { useAsync } from '../lib/useAsync'
 import { useAllSubs } from '../lib/useSubs'
 import { useHistory, useSettings, useBlocked } from '../lib/storage'
@@ -44,7 +42,7 @@ export function Home() {
   const settings = useSettings()
   const blocked = useBlocked()
   const { all, loading } = useAllSubs()
-  const [cat, setCat] = useState<string | undefined>()
+  const cat: string | undefined = undefined
   const key = all.map((c) => c.id).join(',')
 
   const feed = useAsync(() => (all.length ? getSubscriptionFeed(all) : Promise.resolve([])), [key, blocked.length], `feed:${key}`)
@@ -60,7 +58,6 @@ export function Home() {
 
   return (
     <div className="page">
-      <ThemeChips value={cat} onChange={setCat} />
       {!cat && settings.sections.continue && <ContinueWatching />}
 
       {settings.sections.shorts && shelf.length > 0 && <ShortsShelf shorts={shelf} />}

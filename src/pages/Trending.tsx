@@ -2,13 +2,12 @@ import { useEffect, useState } from 'react'
 import { VideoCard, VideoGrid, Skeletons, ShortsShelf } from '../components/VideoCard'
 import { ErrorBox } from '../components/ErrorBox'
 import { Infinite } from '../components/Infinite'
-import { ThemeChips } from '../components/Themes'
 import { useAsync } from '../lib/useAsync'
 import { useSettings, useBlocked } from '../lib/storage'
 import { getTrending, splitShorts, type Video } from '../lib/youtube'
 
 export function Trending() {
-  const [cat, setCat] = useState<string | undefined>()
+  const cat: string | undefined = undefined
   const [extra, setExtra] = useState<{ videos: Video[]; next?: string }>({ videos: [] })
   const settings = useSettings()
   const blocked = useBlocked()
@@ -27,7 +26,6 @@ export function Trending() {
   return (
     <div className="page">
       <h1 className="page-title">Tendances</h1>
-      <ThemeChips value={cat} onChange={setCat} />
       {res.error ? (
         <ErrorBox error={res.error} />
       ) : !res.data ? (

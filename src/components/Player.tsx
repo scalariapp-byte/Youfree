@@ -56,7 +56,7 @@ function DirectPlayer({ id, start, onEnded, onFail, loop, bare, paused }: { id: 
         if (!ok) return
         // HLS si les flux directs plafonnent sous 480p (cas du client IOS).
         const low = !r.qualities.length || r.qualities[0].height < 480
-        if (r.hls && low) r = { ...r, audio: undefined, qualities: [], video: r.hls }
+        if (r.hls && low && !bare) r = { ...r, audio: undefined, qualities: [], video: r.hls }
         setS(r)
         setSrc((r.qualities.find((q) => q.height <= settings.quality) ?? r.qualities[r.qualities.length - 1])?.url ?? r.video)
       },
