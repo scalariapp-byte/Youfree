@@ -5,6 +5,15 @@ import { warmUp } from './lib/youtube'
 import { onStorageChange } from './lib/storage'
 import './styles.css'
 
+// Cache des pages vidé à chaque ouverture (réglages, historique, abonnements et traductions conservés).
+try {
+  Object.keys(localStorage)
+    .filter((k) => k.startsWith('youfree:cache:') || k === 'youfree:homeLast')
+    .forEach((k) => localStorage.removeItem(k))
+  sessionStorage.clear()
+} catch {
+  /* stockage indisponible */
+}
 warmUp()
 import('./lib/notify').then((n) => n.startNotifications())
 // Sauvegarde Google : synchronise au démarrage puis après chaque changement.
