@@ -17,7 +17,7 @@ declare global {
 }
 
 let ytApi: Promise<any> | null = null
-function loadYT() {
+export function loadYT() {
   if (!ytApi) {
     ytApi = new Promise((resolve) => {
       if (window.YT?.Player) return resolve(window.YT)

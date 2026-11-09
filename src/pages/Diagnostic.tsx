@@ -106,6 +106,28 @@ export function Diagnostic() {
         const v = await local.playlistVideos('UU4QobU6STFB0P71PMvOGN5A')
         return `${c.title} | ${c.subscribers} abonnés | ${v.videos.length} vidéos`
       })
+      await step('Musique (lecture directe)', async () => {
+        const l = await import('../lib/innertube')
+        const t = (await l.musicSearch('stromae'))[0]
+        if (!t) throw new Error('recherche musique vide')
+        const { getStreams } = await import('../lib/stream')
+        const st = await getStreams(t.id)
+        const auds = st.formats.filter((f) => f.audio && !f.video)
+        const lines = [`titre=${t.title} (${t.id}) client=${st.client} pistes audio=${auds.length}`]
+        for (const f of auds.slice(0, 3)) {
+          const r = await localFetch(f.url, { headers: { Range: 'bytes=0-1023' } })
+          const el = new Audio()
+          const res = await new Promise<string>((ok) => {
+            el.oncanplay = () => ok('lisible')
+            el.onerror = () => ok(`refusée par le lecteur (code ${el.error?.code} ${el.error?.message ?? ''})`)
+            setTimeout(() => ok('délai dépassé'), 8000)
+            el.src = f.url
+            el.load()
+          })
+          lines.push(`${f.mime.split(';')[0]} ${Math.round(f.bitrate / 1000)} kb/s : serveur HTTP ${r.status}, ${res}`)
+        }
+        return lines.join('\n')
+      })
       await step('Flux vidéo (lecture sans pub, téléchargement)', async () => {
         const { getStreams, downloadOptions } = await import('../lib/stream')
         const st = await getStreams('jNQXAC9IVRw')
