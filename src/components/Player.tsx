@@ -42,6 +42,7 @@ function DirectPlayer({ id, start, onEnded, onFail, loop, bare, paused, title = 
   const readyFor = useRef('')
   const triedQ = useRef<string[]>([])
   const triedA = useRef<string[]>([])
+  const pos = useRef(0)
   const [stats, setStats] = useState(settings.showStats)
   const mountAt = useRef(performance.now())
   const [marks, setMarks] = useState<Record<string, number>>({})
@@ -77,7 +78,9 @@ function DirectPlayer({ id, start, onEnded, onFail, loop, bare, paused, title = 
           if (localStorage.getItem('youfree:audioBlob') === '1' && fmt) audioBlobUrl(fmt.url, fmt.mime).then((u) => ok && setAudioSrc(u), () => ok && setAudioSrc(r.audio!))
           else setAudioSrc(r.audio)
         }
-        setSrc((r.qualities.find((q) => q.height <= settings.quality) ?? r.qualities[r.qualities.length - 1])?.url ?? r.video)
+        // Shorts : 1080p max (écran de téléphone) ; vidéos : qualité préférée.
+        const cap = bare ? Math.min(settings.quality, 1080) : settings.quality
+        setSrc((r.qualities.find((q) => q.height <= cap) ?? r.qualities[r.qualities.length - 1])?.url ?? r.video)
       },
       (e) => (log('vidéo', `${id} flux KO : ${(e as Error).message}`), ok && onFail((e as Error).message)),
     )
@@ -90,7 +93,8 @@ function DirectPlayer({ id, start, onEnded, onFail, loop, bare, paused, title = 
     const video = v.current
     const audio = a.current
     if (!video || !s) return
-    const t0 = video.currentTime || start
+    // Changement de qualité : on reprend là où on en était.
+    const t0 = pos.current || video.currentTime || start
     video.currentTime = t0
     if (!audio) return
     const sync = () => {
@@ -129,7 +133,25 @@ function DirectPlayer({ id, start, onEnded, onFail, loop, bare, paused, title = 
     ]
     on.forEach(([e, f]) => video.addEventListener(e, f))
     // Synchro fréquente : le son reprend en moins d'une demi-seconde s'il décroche.
-    const fast = setInterval(sync, 400)
+    const fast = setInterval(() => (sync(), video.currentTime > 0 && (pos.current = video.currentTime)), 400)
+    // Image bloquée plus de 2,5 s : on passe à la qualité inférieure.
+    let stallTimer: number | undefined
+    const onWaiting = () => {
+      clearTimeout(stallTimer)
+      stallTimer = window.setTimeout(() => {
+        const cur = s.qualities.findIndex((q) => q.url === video.currentSrc || q.url === src)
+        const lower = s.qualities[cur + 1]
+        if (lower && video.readyState < 3) {
+          log(bare ? 'short' : 'vidéo', `${id} blocage, passage en ${lower.height}p`)
+          setSrc(lower.url)
+        }
+      }, 2500)
+    }
+    const onFlow = () => clearTimeout(stallTimer)
+    const onEnd = () => loop && ((video.currentTime = 0), video.play().catch(() => {}))
+    video.addEventListener('waiting', onWaiting)
+    video.addEventListener('playing', onFlow)
+    video.addEventListener('ended', onEnd)
     let saved = 0
     const timer = setInterval(() => {
       // Position enregistrée toutes les ~15 s seulement (moins d'écritures, synchro Google possible).
@@ -143,6 +165,10 @@ function DirectPlayer({ id, start, onEnded, onFail, loop, bare, paused, title = 
       clearNowPlaying(video)
       clearInterval(timer)
       clearInterval(fast)
+      clearTimeout(stallTimer)
+      video.removeEventListener('waiting', onWaiting)
+      video.removeEventListener('playing', onFlow)
+      video.removeEventListener('ended', onEnd)
       if (video.currentTime > 5) updatePosition(id, video.currentTime)
     }
   }, [s, src, audioSrc, id, start, bare, title, artist])
