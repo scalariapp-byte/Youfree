@@ -27,6 +27,7 @@ export interface Settings {
   tabs: string[]
   notifyChannels: string[]
   captions: boolean
+  shareApps: string[]
   translateTitles: boolean
   shortsButtons: { like: boolean; details: boolean; download: boolean; more: boolean }
   shortsSide: 'right' | 'left'
@@ -81,6 +82,7 @@ const DEFAULT_SETTINGS: Settings = {
   tabs: ['/', '/shorts', '/music', '/subscriptions', '/library'],
   notifyChannels: [],
   captions: false,
+  shareApps: [],
   translateTitles: true,
   shortsButtons: { like: true, details: true, download: true, more: true },
   shortsSide: 'right',

@@ -5,6 +5,7 @@ import { useSettings } from '../lib/storage'
 import { Icon } from './Icon'
 import { UpdateBanner } from './UpdateBanner'
 import { MusicBar } from './MusicBar'
+import { ShareSheet } from './ShareSheet'
 import { suggest } from '../lib/youtube'
 
 export function Logo({ compact = false }: { compact?: boolean }) {
@@ -220,6 +221,7 @@ export function Layout({ children }: { children: ReactNode }) {
       </main>
 
       <MusicBar />
+      <ShareSheet />
       <nav className="tabbar">
         {nav.map((n) => (
           <NavLink key={n.to} to={n.to} end={n.end} viewTransition>

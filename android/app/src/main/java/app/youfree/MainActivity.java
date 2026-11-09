@@ -16,6 +16,7 @@ public class MainActivity extends BridgeActivity implements ModifiedMainActivity
     public void onCreate(Bundle savedInstanceState) {
         registerPlugin(YoutmusicDownloaderPlugin.class);
         registerPlugin(BackgroundPlaybackPlugin.class);
+        registerPlugin(ShareTargetsPlugin.class);
         super.onCreate(savedInstanceState);
     }
 
