@@ -1,6 +1,7 @@
 import { useState, type ChangeEvent } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { askPermission } from '../lib/notify'
+import { APK, BUILD, checkUpdate, useUpdate } from '../lib/update'
 import { exportAll, importAll, importLocalSubs, saveSettings, toggleBlock, useBlocked, useLocalSubs, useSettings } from '../lib/storage'
 import { canUseLocal } from '../lib/nativeFetch'
 import { LANGS } from '../lib/i18n'
@@ -49,6 +50,42 @@ function BlockedSection() {
         </div>
       ))}
     </section>
+  )
+}
+
+function UpdatePane() {
+  const s = useSettings()
+  const u = useUpdate()
+  return (
+    <>
+      <label>Mises à jour</label>
+      <div className="pref">
+        <span>
+          <strong>Version installée : {BUILD || 'dev'}</strong>
+          <small>
+            {u.checking
+              ? 'Vérification…'
+              : u.error
+                ? u.error
+                : u.checkedAt
+                  ? u.latest > BUILD
+                    ? `Version ${u.latest} disponible${u.notes ? ' · ' + u.notes : ''}`
+                    : `À jour · vérifié ${ago(u.checkedAt)}`
+                  : 'Pas encore vérifié'}
+          </small>
+        </span>
+        {u.latest > BUILD ? (
+          <a className="btn small" href={APK}>
+            Installer
+          </a>
+        ) : (
+          <button className="btn small ghost" disabled={u.checking} onClick={checkUpdate}>
+            Vérifier
+          </button>
+        )}
+      </div>
+      <Toggle on={s.autoUpdate} set={(v) => saveSettings({ autoUpdate: v })} label="Vérifier automatiquement" hint="Au lancement, au retour dans l’appli et toutes les 30 min" />
+    </>
   )
 }
 
@@ -213,7 +250,7 @@ export function Settings() {
         ['data', 'download', 'Données', `${subs.length} abonnements · import, export, cache`],
       ],
     ],
-    ['Aide', [['help', 'chart', 'Aide et diagnostic', `Version ${import.meta.env.VITE_BUILD ?? 'dev'}`]]],
+    ['Aide', [['help', 'chart', 'Mises à jour, aide et diagnostic', `Version ${import.meta.env.VITE_BUILD ?? 'dev'}`]]],
   ]
   const MENU = GROUPS.flatMap((g) => g[1])
   const title = MENU.find((m) => m[0] === pane)?.[2]
@@ -429,6 +466,7 @@ export function Settings() {
             </div>
           )}
 
+          {pane === 'help' && <UpdatePane />}
           {pane === 'help' && (
             <div className="row-btns">
               <a href="#/diagnostic" className="btn ghost">

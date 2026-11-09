@@ -15,6 +15,7 @@ try {
   /* stockage indisponible */
 }
 warmUp()
+import('./lib/update').then((u) => u.startAutoUpdate())
 import('./lib/notify').then((n) => n.startNotifications())
 // Sauvegarde Google : synchronise au démarrage puis après chaque changement.
 import('./lib/cloud').then((c) => {

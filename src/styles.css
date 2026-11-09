@@ -816,3 +816,5 @@ body { background: var(--bg); }
 .update-float .update-banner { pointer-events: auto; margin: 0; box-shadow: 0 10px 30px rgb(0 0 0 / .45); backdrop-filter: blur(14px); }
 @media (min-width: 861px) { .update-float { left: calc(var(--side) + 20px); right: 20px; } }
 .immersive .update-float { top: 62px; }
+.sheet { overscroll-behavior: contain; -webkit-overflow-scrolling: touch; touch-action: pan-y; transition: transform .25s cubic-bezier(.2,.9,.2,1); }
+.sheet-grip { width: 48px; height: 5px; }
