@@ -67,7 +67,6 @@ export function Home() {
   const popular = useAsync(() => (mix ? forYou(settings.interests) : getTrending(cat)), [cat, settings.region, blocked.length], `pop:${settings.lang}:${settings.region}:${cat ?? ''}:${mix ? settings.interests.join('.') : ''}`)
   const shorts = useAsync(() => (settings.showShorts ? getShorts(cat ?? pickToday(settings.interests, 1)[0]) : Promise.resolve({ videos: [], next: undefined })), [cat, settings.showShorts, settings.region], `sh:${settings.lang}:${settings.region}:${cat ?? pickToday(settings.interests, 1)[0] ?? ''}:${settings.showShorts}`)
 
-  if (!isAvailable()) return <Onboarding />
 
   const subs = splitShorts(feed.data ?? [])
   // Pendant le chargement du nouveau tirage, on montre le précédent (mélangé) : affichage immédiat.
@@ -78,7 +77,10 @@ export function Home() {
       return []
     }
   })()
-  if (popular.data?.videos?.length) localStorage.setItem('youfree:homeLast', JSON.stringify(popular.data.videos.slice(0, 40)))
+  const fresh = popular.data?.videos
+  useEffect(() => {
+    if (fresh?.length) localStorage.setItem('youfree:homeLast', JSON.stringify(fresh.slice(0, 40)))
+  }, [fresh])
   const pop = splitShorts(shuffle(onlyLang(popular.data?.videos ?? last, settings.lang)))
   const shelf = settings.showShorts ? onlyLang([...subs.shorts, ...pop.shorts, ...(shorts.data?.videos ?? [])], settings.lang).filter((v, i, a) => a.findIndex((x) => x.id === v.id) === i) : []
 
@@ -88,6 +90,7 @@ export function Home() {
     const t = setTimeout(() => first.split(',').forEach((id) => getStreams(id).catch(() => {})), 1200)
     return () => clearTimeout(t)
   }, [first])
+  if (!isAvailable()) return <Onboarding />
   const blocks: Record<string, React.ReactNode> = {
     continue: !cat && settings.sections.continue && <ContinueWatching key="c" />,
     shorts: settings.sections.shorts && shelf.length > 0 && <ShortsShelf key="s" shorts={shelf} />,

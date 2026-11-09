@@ -122,8 +122,10 @@ function DirectPlayer({ id, start, onEnded, onFail, loop, bare, paused, title = 
     on.forEach(([e, f]) => video.addEventListener(e, f))
     // Synchro fréquente : le son reprend en moins d'une demi-seconde s'il décroche.
     const fast = setInterval(sync, 400)
+    let saved = 0
     const timer = setInterval(() => {
-      if (video.currentTime > 5) updatePosition(id, video.currentTime)
+      // Position enregistrée toutes les ~15 s seulement (moins d'écritures, synchro Google possible).
+      if (video.currentTime > 5 && Math.abs(video.currentTime - saved) >= 15) updatePosition(id, (saved = video.currentTime))
     }, 2000)
     return () => {
       on.forEach(([e, f]) => video.removeEventListener(e, f))

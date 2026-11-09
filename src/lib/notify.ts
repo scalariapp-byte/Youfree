@@ -4,7 +4,13 @@ import { getLocalSubs, getSettings } from './storage'
 import { isNative } from './nativeFetch'
 
 const LAST = 'youfree:lastSeen'
-const last = (): Record<string, string> => JSON.parse(localStorage.getItem(LAST) || '{}')
+const last = (): Record<string, string> => {
+  try {
+    return JSON.parse(localStorage.getItem(LAST) || '{}')
+  } catch {
+    return {}
+  }
+}
 
 export async function askPermission() {
   if (!isNative()) return false

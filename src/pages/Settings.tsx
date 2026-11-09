@@ -152,7 +152,7 @@ const TAB_LIST: [string, string][] = [
 
 const SECTION_LABELS: Record<string, string> = { continue: 'Reprendre', shorts: 'Shorts', subs: 'Nouveautés des abonnements', popular: 'Pour toi / Populaire' }
 
-type Pane = 'notifs' | 'interests' | 'content' | 'home' | 'look' | 'play' | 'music' | 'cloud' | 'data' | 'help' | null
+type Pane = 'shorts' | 'notifs' | 'interests' | 'content' | 'home' | 'look' | 'play' | 'music' | 'cloud' | 'data' | 'help' | null
 
 export function Settings() {
   const s = useSettings()
@@ -182,40 +182,86 @@ export function Settings() {
   }
   const order = s.homeOrder.filter((k) => SECTION_LABELS[k])
 
-  const MENU: [Pane, string, string, string][] = [
-    ['notifs', 'bell', 'Notifications', `${s.notifyChannels.length} chaîne(s)`],
-    ['interests', 'music', 'Centres d’intérêt', `${s.interests.length} sélectionnés`],
-    ['content', 'search', 'Langue et contenu', `${LANGS.find((l) => l.code === s.lang)?.label ?? ''} · ${blocked.length} chaîne(s) masquée(s)`],
-    ['home', 'home', 'Accueil et onglets', 'Sections, ordre, onglets visibles'],
-    ['look', 'settings', 'Apparence', 'Thème, couleur, texte, animations'],
-    ['play', 'play', 'Lecture vidéo', 'Lecteur, qualité, vitesse, statistiques'],
-    ['music', 'music', 'Musique', 'Qualité audio'],
-    ['cloud', 'user', 'Sauvegarde Google', cloudState().email || 'Non connecté'],
-    ['data', 'download', 'Données', `${subs.length} abonnements · import / export`],
-    ['help', 'chart', 'Aide et diagnostic', `Version ${import.meta.env.VITE_BUILD ?? 'dev'}`],
+  const GROUPS: [string, [Pane, string, string, string][]][] = [
+    [
+      'Contenu',
+      [
+        ['interests', 'music', 'Centres d’intérêt', `${s.interests.length} sélectionnés`],
+        ['content', 'search', 'Langue, région, chaînes masquées', `${LANGS.find((l) => l.code === s.lang)?.label ?? ''} · ${blocked.length} masquée(s)`],
+        ['shorts', 'shorts', 'Shorts', s.showShorts ? 'Activés · boutons et côté' : 'Désactivés'],
+        ['notifs', 'bell', 'Notifications', `${s.notifyChannels.length} chaîne(s)`],
+      ],
+    ],
+    [
+      'Affichage',
+      [
+        ['home', 'home', 'Accueil et onglets', 'Sections, ordre, onglets visibles'],
+        ['look', 'settings', 'Apparence', 'Thème, couleur, fond, texte, animations'],
+      ],
+    ],
+    [
+      'Lecture',
+      [
+        ['play', 'play', 'Vidéos', 'Lecteur, qualité, vitesse, sous-titres, traduction'],
+        ['music', 'music', 'Musique', 'Qualité audio'],
+      ],
+    ],
+    [
+      'Compte et données',
+      [
+        ['cloud', 'user', 'Sauvegarde Google', cloudState().email || 'Non connecté'],
+        ['data', 'download', 'Données', `${subs.length} abonnements · import, export, cache`],
+      ],
+    ],
+    ['Aide', [['help', 'chart', 'Aide et diagnostic', `Version ${import.meta.env.VITE_BUILD ?? 'dev'}`]]],
   ]
+  const MENU = GROUPS.flatMap((g) => g[1])
   const title = MENU.find((m) => m[0] === pane)?.[2]
 
   return (
     <div className="page settings">
       <h1 className="page-title">Paramètres</h1>
-      <div className="settings-menu">
-        {MENU.map(([k, icon, label, hint]) => (
-          <button key={k} onClick={() => setPane(k)}>
-            <span className="sm-icon">
-              <Icon name={icon} size={20} />
-            </span>
-            <span className="sm-text">
-              <strong>{label}</strong>
-              <small>{hint}</small>
-            </span>
-            <Icon name="fwd" size={18} />
-          </button>
-        ))}
-      </div>
+      {GROUPS.map(([group, items]) => (
+        <div key={group} className="settings-group">
+          <h4>{group}</h4>
+          <div className="settings-menu">
+            {items.map(([k, icon, label, hint]) => (
+              <button key={k} onClick={() => setPane(k)}>
+                <span className="sm-icon">
+                  <Icon name={icon} size={20} />
+                </span>
+                <span className="sm-text">
+                  <strong>{label}</strong>
+                  <small>{hint}</small>
+                </span>
+                <Icon name="fwd" size={18} />
+              </button>
+            ))}
+          </div>
+        </div>
+      ))}
 
       <Sheet open={!!pane} onClose={() => setPane(null)} title={title}>
         <div className="pane">
+          {pane === 'shorts' && (
+            <>
+              <Toggle on={s.showShorts} set={(v) => saveSettings({ showShorts: v })} label="Shorts" hint="Onglet et rangées de Shorts" />
+              <label>Boutons des Shorts</label>
+              {(
+                [
+                  ['like', 'J’aime'],
+                  ['details', 'Détails et commentaires'],
+                  ['download', 'Télécharger'],
+                  ['more', 'Plus'],
+                ] as const
+              ).map(([k, l]) => (
+                <Toggle key={k} on={s.shortsButtons[k]} label={l} set={(v) => saveSettings({ shortsButtons: { ...s.shortsButtons, [k]: v } })} />
+              ))}
+              <label>Côté des boutons</label>
+              <Choice value={s.shortsSide} set={(v) => saveSettings({ shortsSide: v })} options={[['right', 'Droite'], ['left', 'Gauche']]} />
+            </>
+          )}
+
           {pane === 'notifs' && (
             <>
               <p className="muted">Une notification quand une chaîne publie une vidéo (vérifié toutes les 30 min tant que l’appli tourne).</p>
@@ -253,20 +299,6 @@ export function Settings() {
                   <option key={r}>{r}</option>
                 ))}
               </select>
-              <Toggle on={s.showShorts} set={(v) => saveSettings({ showShorts: v })} label="Shorts" hint="Onglet et rangées de Shorts" />
-              <label>Boutons des Shorts</label>
-              {(
-                [
-                  ['like', 'J’aime'],
-                  ['details', 'Détails et commentaires'],
-                  ['download', 'Télécharger'],
-                  ['more', 'Plus'],
-                ] as const
-              ).map(([k, l]) => (
-                <Toggle key={k} on={s.shortsButtons[k]} label={l} set={(v) => saveSettings({ shortsButtons: { ...s.shortsButtons, [k]: v } })} />
-              ))}
-              <label>Côté des boutons</label>
-              <Choice value={s.shortsSide} set={(v) => saveSettings({ shortsSide: v })} options={[['right', 'Droite'], ['left', 'Gauche']]} />
               <BlockedSection />
             </>
           )}
