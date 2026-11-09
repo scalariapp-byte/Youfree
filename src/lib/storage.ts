@@ -24,6 +24,8 @@ export interface Settings {
   tabLabels: boolean
   showStats: boolean
   audioQuality: 'high' | 'low'
+  tabs: string[]
+  notifyChannels: string[]
   player: 'direct' | 'nocookie' | 'invidious'
   invidiousInstance: string
 }
@@ -71,6 +73,8 @@ const DEFAULT_SETTINGS: Settings = {
   tabLabels: true,
   showStats: false,
   audioQuality: 'high',
+  tabs: ['/', '/shorts', '/music', '/subscriptions', '/library'],
+  notifyChannels: [],
   player: 'direct',
   invidiousInstance: 'https://yewtu.be',
 }

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import { useAsync } from '../lib/useAsync'
 import { ErrorBox } from '../components/ErrorBox'
 import { Icon } from '../components/Icon'
@@ -20,6 +21,11 @@ function TrackRow({ t, list, i, onAdd, onRemove }: { t: Track; list: Track[]; i:
           <small>{t.artist}</small>
         </span>
       </button>
+      {t.artistId && (
+        <Link to={`/artist/${t.artistId}`} className="icon-btn small" aria-label="Artiste">
+          <Icon name="user" size={16} />
+        </Link>
+      )}
       {t.duration && <small className="muted">{t.duration}</small>}
       {onAdd && (
         <button className="icon-btn small" onClick={() => onAdd(t)} aria-label="Ajouter à une playlist">
@@ -42,6 +48,8 @@ export function Music() {
   const lists = usePlaylists()
   const pl = lists.find((p) => p.id === openList)
   const home = useAsync(async () => (await music()).musicHome(), [], 'music:home')
+  const explore = useAsync(async () => (await music()).musicExplore(), [], 'music:explore')
+  const nav = useNavigate()
   const res = useAsync(async () => (q ? (await music()).musicSearch(q) : null), [q], q ? `music:s:${q}` : undefined)
   return (
     <div className="page music">
@@ -104,7 +112,7 @@ export function Music() {
             ))}
           </div>
         </section>
-        {home.data.map((s) => (
+        {[...home.data, ...(explore.data ?? [])].map((s) => (
           <section key={s.title}>
             <h2>{s.title}</h2>
             <div className="album-row">
@@ -114,7 +122,7 @@ export function Music() {
                     <img src={t.thumbnail} alt="" loading="lazy" />
                   </button>
                   <strong>{t.title}</strong>
-                  <small>
+                  <small onClick={() => t.artistId && nav(`/artist/${t.artistId}`)} className={t.artistId ? 'artist-link' : ''}>
                     {t.artist}
                     <button className="link" onClick={() => setAdding(t)} aria-label="Ajouter à une playlist">
                       {' '}

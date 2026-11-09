@@ -1,4 +1,6 @@
 import { useState, type ChangeEvent } from 'react'
+import { useSearchParams } from 'react-router-dom'
+import { askPermission } from '../lib/notify'
 import { exportAll, importAll, importLocalSubs, saveSettings, toggleBlock, useBlocked, useLocalSubs, useSettings } from '../lib/storage'
 import { canUseLocal } from '../lib/nativeFetch'
 import { LANGS } from '../lib/i18n'
@@ -142,14 +144,15 @@ function Choice<T extends string | number>({ value, set, options }: { value: T; 
 
 const SECTION_LABELS: Record<string, string> = { continue: 'Reprendre', shorts: 'Shorts', subs: 'Nouveautés des abonnements', popular: 'Pour toi / Populaire' }
 
-type Pane = 'interests' | 'content' | 'home' | 'look' | 'play' | 'music' | 'cloud' | 'data' | 'help' | null
+type Pane = 'notifs' | 'interests' | 'content' | 'home' | 'look' | 'play' | 'music' | 'cloud' | 'data' | 'help' | null
 
 export function Settings() {
   const s = useSettings()
   const subs = useLocalSubs()
   const blocked = useBlocked()
   const [msg, setMsg] = useState('')
-  const [pane, setPane] = useState<Pane>(null)
+  const [params] = useSearchParams()
+  const [pane, setPane] = useState<Pane>((params.get('pane') as Pane) || null)
 
   const onFile = (kind: 'takeout' | 'backup') => async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -177,9 +180,10 @@ export function Settings() {
   }
 
   const MENU: [Pane, string, string, string][] = [
+    ['notifs', 'bell', 'Notifications', `${s.notifyChannels.length} chaîne(s)`],
     ['interests', 'music', 'Centres d’intérêt', `${s.interests.length} sélectionnés`],
     ['content', 'search', 'Langue et contenu', `${LANGS.find((l) => l.code === s.lang)?.label ?? ''} · ${blocked.length} chaîne(s) masquée(s)`],
-    ['home', 'home', 'Accueil', 'Sections, ordre, onglet de démarrage'],
+    ['home', 'home', 'Accueil et onglets', 'Sections, ordre, onglets visibles'],
     ['look', 'settings', 'Apparence', 'Thème, couleur, texte, animations'],
     ['play', 'play', 'Lecture vidéo', 'Lecteur, qualité, vitesse, statistiques'],
     ['music', 'music', 'Musique', 'Qualité audio'],
@@ -209,6 +213,24 @@ export function Settings() {
 
       <Sheet open={!!pane} onClose={() => setPane(null)} title={title}>
         <div className="pane">
+          {pane === 'notifs' && (
+            <>
+              <p className="muted">Une notification quand une chaîne publie une vidéo (vérifié toutes les 30 min tant que l’appli tourne).</p>
+              {subs.length === 0 && <p className="muted">Abonne-toi d’abord à des chaînes (onglet Abonnements).</p>}
+              {subs.map((c) => (
+                <Toggle
+                  key={c.id}
+                  on={s.notifyChannels.includes(c.id)}
+                  label={c.title}
+                  set={async (v) => {
+                    if (v) await askPermission()
+                    saveSettings({ notifyChannels: v ? [...s.notifyChannels, c.id] : s.notifyChannels.filter((x) => x !== c.id) })
+                  }}
+                />
+              ))}
+            </>
+          )}
+
           {pane === 'interests' && <InterestPicker value={s.interests} onChange={(v) => saveSettings({ interests: v })} />}
 
           {pane === 'content' && (
@@ -255,6 +277,17 @@ export function Settings() {
                     />
                   </div>
                 </div>
+              ))}
+              <label>Onglets visibles</label>
+              {(
+                [
+                  ['/shorts', 'Shorts'],
+                  ['/music', 'Musique'],
+                  ['/subscriptions', 'Abonnements'],
+                  ['/library', 'Bibliothèque'],
+                ] as const
+              ).map(([t, l]) => (
+                <Toggle key={t} on={s.tabs.includes(t)} label={l} set={(v) => saveSettings({ tabs: v ? [...s.tabs, t] : s.tabs.filter((x) => x !== t) })} />
               ))}
               <label>Onglet au démarrage</label>
               <Choice value={s.startTab} set={(v) => saveSettings({ startTab: v })} options={[['/', 'Accueil'], ['/shorts', 'Shorts'], ['/music', 'Musique'], ['/subscriptions', 'Abonnements']]} />

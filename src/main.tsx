@@ -6,6 +6,7 @@ import { onStorageChange } from './lib/storage'
 import './styles.css'
 
 warmUp()
+import('./lib/notify').then((n) => n.startNotifications())
 // Sauvegarde Google : synchronise au démarrage puis après chaque changement.
 import('./lib/cloud').then((c) => {
   if (c.cloudState().email) c.sync().catch(() => {})

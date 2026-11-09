@@ -30,6 +30,7 @@ const PATHS: Record<string, string> = {
   plus: 'M12 5v14M5 12h14',
   trash: 'M4 7h16M9 7V4h6v3m-8 0 1 13h8l1-13',
   chart: 'M4 20V10M10 20V4M16 20v-7M22 20H2',
+  bell: 'M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10 21h4',
   user: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zm-8 9a8 8 0 0 1 16 0',
 }
 

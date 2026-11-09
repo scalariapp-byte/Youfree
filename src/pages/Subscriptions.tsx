@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { VideoCard, VideoGrid, Skeletons, ShortsShelf } from '../components/VideoCard'
 import { Avatar } from '../components/Layout'
+import { ChannelFinder } from '../components/ChannelFinder'
+import { Icon } from '../components/Icon'
 import { ErrorBox } from '../components/ErrorBox'
 import { useAsync } from '../lib/useAsync'
 import { useAllSubs } from '../lib/useSubs'
@@ -12,7 +14,7 @@ export function Subscriptions() {
   const { all, google, loading } = useAllSubs()
   const settings = useSettings()
   const blocked = useBlocked()
-  const [tab, setTab] = useState<'feed' | 'channels'>('feed')
+  const [tab, setTab] = useState<'feed' | 'channels' | 'find'>('feed')
   const [force, setForce] = useState(0)
   const key = all.map((c) => c.id).join(',')
   const feed = useAsync(() => (all.length ? getSubscriptionFeed(all, force > 0) : Promise.resolve([])), [key, force, blocked.length])
@@ -20,24 +22,28 @@ export function Subscriptions() {
   if (!all.length && !loading)
     return (
       <div className="page">
-        <div className="notice">
-          <strong>Aucun abonnement</strong>
-          <p>
-            Connecte ton compte Google, ou ouvre une chaîne et clique « S’abonner » : l’abonnement est gardé sur cet appareil, sans compte.
-          </p>
-          <p>
-            Tu peux aussi importer un export Google Takeout (subscriptions.csv) dans les <Link to="/settings">Réglages</Link>.
-          </p>
-        </div>
+        <h1 className="page-title">Abonnements</h1>
+        <ChannelFinder />
       </div>
     )
 
   return (
     <div className="page">
       <h1 className="page-title">Abonnements</h1>
+      <Link to="/settings?pane=notifs" className="notif-panel">
+        <Icon name="bell" />
+        <span>
+          <strong>Notifications</strong>
+          <small>Choisir les chaînes qui te préviennent des nouvelles vidéos</small>
+        </span>
+        <Icon name="fwd" size={18} />
+      </Link>
       <div className="chips">
         <button className={`chip ${tab === 'feed' ? 'on' : ''}`} onClick={() => setTab('feed')}>
           Dernières vidéos
+        </button>
+        <button className={`chip ${tab === 'find' ? 'on' : ''}`} onClick={() => setTab('find')}>
+          + Trouver des chaînes
         </button>
         <button className={`chip ${tab === 'channels' ? 'on' : ''}`} onClick={() => setTab('channels')}>
           Chaînes ({all.length})
@@ -48,7 +54,9 @@ export function Subscriptions() {
           </button>
         )}
       </div>
-      {tab === 'channels' ? (
+      {tab === 'find' ? (
+        <ChannelFinder />
+      ) : tab === 'channels' ? (
         <div className="channels">
           {all.map((c) => {
             const fromGoogle = google.some((g) => g.id === c.id)

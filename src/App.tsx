@@ -16,6 +16,7 @@ const Subscriptions = lazy(() => import('./pages/Subscriptions').then((m) => ({ 
 const Library = lazy(() => import('./pages/Library').then((m) => ({ default: m.Library })))
 const Settings = lazy(() => import('./pages/Settings').then((m) => ({ default: m.Settings })))
 const Music = lazy(() => import('./pages/Music').then((m) => ({ default: m.Music })))
+const Artist = lazy(() => import('./pages/Artist').then((m) => ({ default: m.Artist })))
 const Diagnostic = lazy(() => import('./pages/Diagnostic').then((m) => ({ default: m.Diagnostic })))
 
 // Précharge les pages les plus utilisées dès que l'accueil est affiché.
@@ -40,6 +41,7 @@ export default function App() {
             <Route path="/library" element={<Library />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/music" element={<Music />} />
+            <Route path="/artist/:id" element={<Artist />} />
             <Route path="/diagnostic" element={<Diagnostic />} />
             <Route path="*" element={<Home />} />
           </Routes>

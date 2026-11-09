@@ -131,6 +131,7 @@ function DirectPlayer({ id, start, onEnded, onFail, loop, bare, paused, title = 
       <video
         ref={v}
         src={src}
+        poster={`https://i.ytimg.com/vi/${id}/${bare ? 'oar2' : 'hqdefault'}.jpg`}
         autoPlay={!paused}
         preload="auto"
         playsInline

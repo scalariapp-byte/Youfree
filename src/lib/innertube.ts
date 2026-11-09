@@ -361,6 +361,7 @@ export interface Track {
   artist: string
   thumbnail: string
   duration?: string
+  artistId?: string
 }
 export interface MusicShelf {
   title: string
@@ -374,7 +375,9 @@ const toTrack = (n: any): Track | null => {
   return {
     id,
     title: txt(n.title) || String(n.title ?? ''),
-    artist: (n.artists ?? n.authors ?? []).map((a: any) => a.name).join(', ') || txt(n.subtitle) || n.author?.name || '',
+    artist:
+      (n.artists ?? n.authors ?? []).map((a: any) => a.name).join(', ') || txt(n.subtitle) || n.author?.name || txt(n.flex_columns?.[1]?.title) || '',
+    artistId: (n.artists ?? n.authors ?? []).find((a: any) => a.channel_id)?.channel_id ?? n.author?.channel_id,
     thumbnail: bestThumb(Array.isArray(thumbs) ? thumbs : []) || thumbFor(id),
     duration: n.duration?.text,
   }
@@ -385,6 +388,44 @@ export async function musicHome(): Promise<MusicShelf[]> {
   return (feed.sections ?? [])
     .map((s: any) => ({ title: txt(s.header?.title) || '', items: (s.contents ?? []).map(toTrack).filter(Boolean) }))
     .filter((s: MusicShelf) => s.items.length)
+}
+
+const shelves = (sections: any[] = []): MusicShelf[] =>
+  sections.map((s: any) => ({ title: txt(s.header?.title) || txt(s.title) || '', items: (s.contents ?? []).map(toTrack).filter(Boolean) })).filter((s) => s.items.length)
+
+/** Nouveautés, classements, humeurs : beaucoup plus de choix que l'accueil seul. */
+export async function musicExplore(): Promise<MusicShelf[]> {
+  const e: any = await (await yt()).music.getExplore()
+  return shelves(e.sections)
+}
+
+export interface ArtistInfo {
+  id: string
+  name: string
+  bio: string
+  thumbnail: string
+  stats: string[]
+  sections: MusicShelf[]
+}
+export async function musicArtist(id: string): Promise<ArtistInfo> {
+  const a: any = await (await yt()).music.getArtist(id)
+  const h = a.header ?? {}
+  return {
+    id,
+    name: txt(h.title),
+    bio: txt(h.description),
+    thumbnail: bestThumb(h.thumbnail?.contents ?? h.thumbnail ?? h.foreground_thumbnail ?? []),
+    stats: [txt(h.subscription_button?.subscriber_count), txt(h.monthly_listener_count), findString(h, /(subscribers|monthly|views|listeners)/i)].filter(Boolean),
+    sections: shelves(a.sections),
+  }
+}
+
+/** Recherche de chaînes (suggestions d'abonnements). */
+export async function searchChannels(q: string) {
+  const r: any = await (await yt()).search(q, { type: 'channel' })
+  return (r.channels ?? r.results ?? [])
+    .map((c: any) => ({ id: c.id ?? c.author?.id, title: c.author?.name ?? txt(c.title), thumbnail: bestThumb(c.author?.thumbnails ?? c.thumbnails), subs: txt(c.subscriber_count) || txt(c.video_count) }))
+    .filter((c: any) => /^UC[\w-]{22}$/.test(c.id ?? ''))
 }
 
 export async function musicSearch(q: string): Promise<Track[]> {

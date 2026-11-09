@@ -20,7 +20,9 @@ export function MusicBar() {
         <div className="np-art" style={{ backgroundImage: `url(${m.track.thumbnail})` }} />
         <img className="np-cover" src={m.track.thumbnail.replace(/=w\d+-h\d+/, '=w720-h720')} alt="" />
         <h2>{m.track.title}</h2>
-        <p className="muted">{m.error || m.track.artist}</p>
+        <p className="muted">
+          {m.error || (m.track.artistId ? <a href={`#/artist/${m.track.artistId}`} onClick={() => setFull(false)}>{m.track.artist} ›</a> : m.track.artist)}
+        </p>
         <button className="btn ghost small" onClick={() => setAdd(true)}>
           <Icon name="plus" size={16} /> Ajouter à une playlist
         </button>
