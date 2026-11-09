@@ -10,6 +10,7 @@ import { Subscriptions } from './pages/Subscriptions'
 import { Library } from './pages/Library'
 import { Settings } from './pages/Settings'
 import { Diagnostic } from './pages/Diagnostic'
+import { Shorts } from './pages/Shorts'
 
 export default function App() {
   return (
@@ -18,6 +19,7 @@ export default function App() {
         <Layout>
           <Routes>
             <Route path="/" element={<Home />} />
+            <Route path="/shorts" element={<Shorts />} />
             <Route path="/trending" element={<Trending />} />
             <Route path="/search" element={<Search />} />
             <Route path="/watch/:id" element={<Watch />} />

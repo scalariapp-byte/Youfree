@@ -1,13 +1,15 @@
 import { useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { VideoCard, VideoGrid, Skeletons } from '../components/VideoCard'
+import { VideoCard, VideoGrid, Skeletons, ShortsShelf } from '../components/VideoCard'
 import { ErrorBox } from '../components/ErrorBox'
 import { useAsync } from '../lib/useAsync'
-import { search, type Video } from '../lib/youtube'
+import { useSettings } from '../lib/storage'
+import { search, splitShorts, type Video } from '../lib/youtube'
 
 export function Search() {
   const [params] = useSearchParams()
   const q = params.get('q') ?? ''
+  const { showShorts } = useSettings()
   const [extra, setExtra] = useState<{ videos: Video[]; next?: string }>({ videos: [] })
   const res = useAsync(() => {
     setExtra({ videos: [] })
@@ -18,20 +20,20 @@ export function Search() {
     const r = await search(q, next)
     setExtra((e) => ({ videos: [...e.videos, ...r.videos], next: r.next ?? '' }))
   }
+  const split = splitShorts([...(res.data?.videos ?? []), ...extra.videos])
 
   return (
     <div className="page">
-      <h2>Résultats pour « {q} »</h2>
+      <h1 className="page-title">« {q} »</h1>
       {res.error ? (
         <ErrorBox error={res.error} />
       ) : !res.data ? (
         <Skeletons />
-      ) : res.data.videos.length === 0 ? (
-        <p className="muted">Aucun résultat.</p>
       ) : (
         <>
+          {showShorts && <ShortsShelf shorts={split.shorts} more={false} />}
           <VideoGrid>
-            {[...res.data.videos, ...extra.videos].map((v) => (
+            {split.videos.map((v) => (
               <VideoCard key={v.id} video={v} />
             ))}
           </VideoGrid>

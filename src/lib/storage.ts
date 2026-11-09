@@ -5,7 +5,8 @@ export interface Settings {
   apiKey: string
   clientId: string
   region: string
-  hideShorts: boolean
+  showShorts: boolean
+  theme: 'dark' | 'light' | 'system'
   hideGaming: boolean
   player: 'nocookie' | 'invidious'
   source: 'auto' | 'api' | 'local'
@@ -36,7 +37,8 @@ const DEFAULT_SETTINGS: Settings = {
   apiKey: '',
   clientId: '',
   region: 'FR',
-  hideShorts: true,
+  showShorts: true,
+  theme: 'dark',
   hideGaming: false,
   player: 'nocookie',
   source: 'auto',

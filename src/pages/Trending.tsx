@@ -1,24 +1,10 @@
 import { useState } from 'react'
-import { VideoCard, VideoGrid, Skeletons } from '../components/VideoCard'
+import { VideoCard, VideoGrid, Skeletons, ShortsShelf } from '../components/VideoCard'
 import { ErrorBox } from '../components/ErrorBox'
+import { ThemeChips } from '../components/Themes'
 import { useAsync } from '../lib/useAsync'
 import { useSettings } from '../lib/storage'
-import { getTrending, type Video } from '../lib/youtube'
-
-// Pas de catégorie « Jeux vidéo » (20) dans les thèmes proposés.
-const CATEGORIES: [string, string | undefined][] = [
-  ['Tout', undefined],
-  ['Musique', '10'],
-  ['Actualités', '25'],
-  ['Science & tech', '28'],
-  ['Éducation', '27'],
-  ['Sport', '17'],
-  ['Divertissement', '24'],
-  ['Humour', '23'],
-  ['Films & animation', '1'],
-  ['Cuisine & vie', '26'],
-  ['Auto', '2'],
-]
+import { getTrending, splitShorts, type Video } from '../lib/youtube'
 
 export function Trending() {
   const [cat, setCat] = useState<string | undefined>()
@@ -27,31 +13,28 @@ export function Trending() {
   const res = useAsync(() => {
     setExtra({ videos: [] })
     return getTrending(cat)
-  }, [cat, settings.region, settings.hideShorts, settings.hideGaming])
+  }, [cat, settings.region, settings.hideGaming, settings.source])
 
   const next = extra.next ?? res.data?.next
   const more = async () => {
     const r = await getTrending(cat, next)
     setExtra((e) => ({ videos: [...e.videos, ...r.videos], next: r.next ?? '' }))
   }
+  const split = splitShorts([...(res.data?.videos ?? []), ...extra.videos])
 
   return (
     <div className="page">
-      <div className="chips">
-        {CATEGORIES.map(([label, id]) => (
-          <button key={label} className={`chip ${cat === id ? 'on' : ''}`} onClick={() => setCat(id)}>
-            {label}
-          </button>
-        ))}
-      </div>
+      <h1 className="page-title">Tendances</h1>
+      <ThemeChips value={cat} onChange={setCat} />
       {res.error ? (
         <ErrorBox error={res.error} />
       ) : !res.data ? (
         <Skeletons />
       ) : (
         <>
+          {settings.showShorts && <ShortsShelf shorts={split.shorts} />}
           <VideoGrid>
-            {[...res.data.videos, ...extra.videos].map((v) => (
+            {split.videos.map((v) => (
               <VideoCard key={v.id} video={v} />
             ))}
           </VideoGrid>

@@ -1,11 +1,12 @@
 import { useState } from 'react'
 import { useParams } from 'react-router-dom'
-import { VideoCard, VideoGrid, Skeletons } from '../components/VideoCard'
+import { VideoCard, VideoGrid, Skeletons, ShortCard } from '../components/VideoCard'
+import { Avatar } from '../components/Layout'
 import { ErrorBox } from '../components/ErrorBox'
 import { useAsync } from '../lib/useAsync'
-import { applyFilters, getChannel, getPlaylistVideos, type Video } from '../lib/youtube'
+import { applyFilters, getChannel, getChannelShorts, getPlaylistVideos, splitShorts, type Video } from '../lib/youtube'
 import { compact } from '../lib/format'
-import { toggleLocalSub, useLocalSubs } from '../lib/storage'
+import { toggleLocalSub, useLocalSubs, useSettings } from '../lib/storage'
 import { useAllSubs } from '../lib/useSubs'
 
 export function Channel() {
@@ -13,7 +14,10 @@ export function Channel() {
   const subs = useLocalSubs()
   const { google } = useAllSubs()
   const [extra, setExtra] = useState<{ videos: Video[]; next?: string }>({ videos: [] })
+  const { showShorts } = useSettings()
+  const [tab, setTab] = useState<'videos' | 'shorts'>('videos')
   const ch = useAsync(() => getChannel(id), [id])
+  const shorts = useAsync(() => (tab === 'shorts' ? getChannelShorts(id) : Promise.resolve(undefined)), [id, tab])
   const vids = useAsync(() => {
     setExtra({ videos: [] })
     return getPlaylistVideos('UU' + id.slice(2), 30)
@@ -35,7 +39,7 @@ export function Channel() {
         <>
           {c.banner && <div className="banner" style={{ backgroundImage: `url(${c.banner})` }} />}
           <header className="channel-head">
-            <img src={c.thumbnail} alt="" referrerPolicy="no-referrer" />
+            <Avatar src={c.thumbnail} name={c.title} size={88} />
             <div>
               <h1>{c.title}</h1>
               <p className="muted">
@@ -53,15 +57,39 @@ export function Channel() {
           </header>
         </>
       )}
-      {vids.error ? (
+      {showShorts && (
+        <div className="chips">
+          <button className={`chip ${tab === 'videos' ? 'on' : ''}`} onClick={() => setTab('videos')}>
+            Vidéos
+          </button>
+          <button className={`chip ${tab === 'shorts' ? 'on' : ''}`} onClick={() => setTab('shorts')}>
+            Shorts
+          </button>
+        </div>
+      )}
+      {tab === 'shorts' ? (
+        shorts.error ? (
+          <ErrorBox error={shorts.error} />
+        ) : !shorts.data ? (
+          <Skeletons n={6} />
+        ) : shorts.data.videos.length === 0 ? (
+          <p className="muted">Aucun Short sur cette chaîne.</p>
+        ) : (
+          <div className="shorts-grid">
+            {shorts.data.videos.map((v) => (
+              <ShortCard key={v.id} video={v} list={shorts.data!.videos} />
+            ))}
+          </div>
+        )
+      ) : vids.error ? (
         <ErrorBox error={vids.error} />
       ) : !vids.data ? (
         <Skeletons />
       ) : (
         <>
           <VideoGrid>
-            {applyFilters([...vids.data.videos, ...extra.videos]).map((v) => (
-              <VideoCard key={v.id} video={v} />
+            {splitShorts(applyFilters([...vids.data.videos, ...extra.videos])).videos.map((v) => (
+              <VideoCard key={v.id} video={{ ...v, channelAvatar: v.channelAvatar ?? c?.thumbnail }} />
             ))}
           </VideoGrid>
           {next && (

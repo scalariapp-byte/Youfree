@@ -1,9 +1,11 @@
 import { Children } from 'react'
 import { Link } from 'react-router-dom'
-import { Empty } from './ErrorBox'
 import type { Video } from '../lib/youtube'
 import { compact, duration, ago, decode } from '../lib/format'
 import { toggleWatchLater, useWatchLater, type StoredVideo } from '../lib/storage'
+import { Empty } from './ErrorBox'
+import { Avatar } from './Layout'
+import { Icon } from './Icon'
 
 export const toStored = (v: Video): StoredVideo => ({
   id: v.id,
@@ -26,6 +28,9 @@ export function VideoCard({ video, progress, subtitle, onRemove }: Props) {
   const saved = later.some((x) => x.id === video.id)
   const full = 'views' in video ? video : null
   const pct = progress && video.durationSec ? Math.min(100, (progress / video.durationSec) * 100) : 0
+  const meta =
+    subtitle ??
+    [full && full.views ? `${compact(full.views)} vues` : '', full?.publishedAt ? ago(full.publishedAt) : ''].filter(Boolean).join(' · ')
 
   return (
     <article className="card">
@@ -38,30 +43,33 @@ export function VideoCard({ video, progress, subtitle, onRemove }: Props) {
           </span>
         )}
       </Link>
-      <div className="card-body">
-        <Link to={`/watch/${video.id}`} className="card-title" title={decode(video.title)}>
-          {decode(video.title)}
+      <div className="card-info">
+        <Link to={video.channelId ? `/channel/${video.channelId}` : '#'} className="card-avatar" aria-label={video.channelTitle}>
+          <Avatar src={full?.channelAvatar} name={video.channelTitle || '?'} />
         </Link>
-        <Link to={`/channel/${video.channelId}`} className="card-channel">
-          {video.channelTitle}
-        </Link>
-        <div className="card-meta">
-          {subtitle ?? (full ? `${compact(full.views)} vues · ${ago(full.publishedAt)}` : '')}
+        <div className="card-body">
+          <Link to={`/watch/${video.id}`} className="card-title" title={decode(video.title)}>
+            {decode(video.title)}
+          </Link>
+          <div className="card-meta">
+            <Link to={`/channel/${video.channelId}`}>{video.channelTitle}</Link>
+            {meta && <span> · {meta}</span>}
+          </div>
         </div>
-      </div>
-      <div className="card-actions">
-        <button
-          className={`icon-btn ${saved ? 'on' : ''}`}
-          title={saved ? 'Retirer de « Plus tard »' : 'Regarder plus tard'}
-          onClick={() => toggleWatchLater('views' in video ? toStored(video) : video)}
-        >
-          {saved ? '✓' : '⏱'}
-        </button>
-        {onRemove && (
-          <button className="icon-btn" title="Retirer" onClick={onRemove}>
-            ✕
+        <div className="card-actions">
+          <button
+            className={`icon-btn small ${saved ? 'on' : ''}`}
+            title={saved ? 'Retirer de « Plus tard »' : 'Regarder plus tard'}
+            onClick={() => toggleWatchLater('views' in video ? toStored(video) : video)}
+          >
+            <Icon name={saved ? 'check' : 'clock'} size={18} />
           </button>
-        )}
+          {onRemove && (
+            <button className="icon-btn small" title="Retirer" onClick={onRemove}>
+              <Icon name="close" size={18} />
+            </button>
+          )}
+        </div>
       </div>
     </article>
   )
@@ -78,10 +86,47 @@ export function Skeletons({ n = 12 }: { n?: number }) {
       {Array.from({ length: n }, (_, i) => (
         <div key={i} className="card skeleton">
           <div className="thumb" />
-          <div className="line" />
-          <div className="line short" />
+          <div className="card-info">
+            <span className="avatar sk" />
+            <div className="card-body">
+              <div className="line" />
+              <div className="line short" />
+            </div>
+          </div>
         </div>
       ))}
     </div>
+  )
+}
+
+/** Carte verticale 9:16 pour un Short. */
+export function ShortCard({ video, list }: { video: Video; list?: Video[] }) {
+  return (
+    <Link to={`/shorts?v=${video.id}`} state={{ list }} className="short-card">
+      <img src={video.thumbnail} alt="" loading="lazy" onError={(e) => ((e.currentTarget.src = `https://i.ytimg.com/vi/${video.id}/hqdefault.jpg`))} />
+      <span className="short-info">
+        <span className="short-title">{decode(video.title)}</span>
+        {video.views > 0 && <small>{compact(video.views)} vues</small>}
+      </span>
+    </Link>
+  )
+}
+
+export function ShortsShelf({ shorts, title = 'Shorts', more = true }: { shorts: Video[]; title?: string; more?: boolean }) {
+  if (!shorts.length) return null
+  return (
+    <section className="shelf">
+      <div className="section-head">
+        <h2>
+          <Icon name="shorts" /> {title}
+        </h2>
+        {more && <Link to="/shorts">Tout voir</Link>}
+      </div>
+      <div className="shorts-row">
+        {shorts.slice(0, 20).map((s) => (
+          <ShortCard key={s.id} video={s} list={shorts} />
+        ))}
+      </div>
+    </section>
   )
 }

@@ -1,11 +1,12 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { VideoCard, VideoGrid, Skeletons } from '../components/VideoCard'
+import { VideoCard, VideoGrid, Skeletons, ShortsShelf } from '../components/VideoCard'
+import { Avatar } from '../components/Layout'
 import { ErrorBox } from '../components/ErrorBox'
 import { useAsync } from '../lib/useAsync'
 import { useAllSubs } from '../lib/useSubs'
 import { toggleLocalSub, useSettings } from '../lib/storage'
-import { getSubscriptionFeed } from '../lib/youtube'
+import { getSubscriptionFeed, splitShorts } from '../lib/youtube'
 
 export function Subscriptions() {
   const { all, google, loading } = useAllSubs()
@@ -13,7 +14,7 @@ export function Subscriptions() {
   const [tab, setTab] = useState<'feed' | 'channels'>('feed')
   const [force, setForce] = useState(0)
   const key = all.map((c) => c.id).join(',')
-  const feed = useAsync(() => (all.length ? getSubscriptionFeed(all, force > 0) : Promise.resolve([])), [key, force, settings.hideShorts, settings.hideGaming])
+  const feed = useAsync(() => (all.length ? getSubscriptionFeed(all, force > 0) : Promise.resolve([])), [key, force, settings.hideGaming, settings.source])
 
   if (!all.length && !loading)
     return (
@@ -32,6 +33,7 @@ export function Subscriptions() {
 
   return (
     <div className="page">
+      <h1 className="page-title">Abonnements</h1>
       <div className="chips">
         <button className={`chip ${tab === 'feed' ? 'on' : ''}`} onClick={() => setTab('feed')}>
           Dernières vidéos
@@ -52,7 +54,7 @@ export function Subscriptions() {
             return (
               <div key={c.id} className="channel-row">
                 <Link to={`/channel/${c.id}`}>
-                  <img src={c.thumbnail} alt="" loading="lazy" referrerPolicy="no-referrer" />
+                  <Avatar src={c.thumbnail} name={c.title} size={40} />
                   <span>{c.title}</span>
                 </Link>
                 {fromGoogle ? (
@@ -71,11 +73,14 @@ export function Subscriptions() {
       ) : !feed.data ? (
         <Skeletons />
       ) : (
-        <VideoGrid>
-          {feed.data.map((v) => (
-            <VideoCard key={v.id} video={v} />
-          ))}
-        </VideoGrid>
+        <>
+          {settings.showShorts && <ShortsShelf shorts={splitShorts(feed.data).shorts} title="Shorts de tes abonnements" more={false} />}
+          <VideoGrid>
+            {splitShorts(feed.data).videos.map((v) => (
+              <VideoCard key={v.id} video={v} />
+            ))}
+          </VideoGrid>
+        </>
       )}
     </div>
   )

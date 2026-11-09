@@ -64,7 +64,7 @@ export function Diagnostic() {
       detail: [
         `plateforme=${Capacitor.getPlatform()} natif=${isNative()} sansCléPossible=${canUseLocal()}`,
         `source=${st.source} modeSansClé=${useLocal()} identifiants=${hasCredentials()} région=${st.region}`,
-        `filtres: shorts=${st.hideShorts} jeux=${st.hideGaming}`,
+        `shorts=${st.showShorts} jeux masqués=${st.hideGaming}`,
         `navigateur=${navigator.userAgent}`,
       ].join('\n'),
     })

@@ -92,7 +92,27 @@ const bestThumb = (arr: any): string => {
 function toVideo(n: any, fallbackChannel?: { id: string; title: string }): Video | null {
   if (!n) return null
   const type: string = n.type ?? n.constructor?.type ?? ''
-  if (type === 'ReelItem' || type === 'ShortsLockupView') return null
+  if (type === 'ShortsLockupView' || type === 'ReelItem') {
+    const id: string =
+      n.on_tap_endpoint?.payload?.videoId ?? (type === 'ReelItem' ? n.id : String(n.entity_id ?? '').replace(/^shorts-shelf-item-/, ''))
+    if (!id || id.length !== 11) return null
+    const viewsTxt = txt(n.overlay_metadata?.secondary_text) || txt(n.views)
+    return {
+      id,
+      title: txt(n.overlay_metadata?.primary_text) || txt(n.title) || String(n.accessibility_text ?? '').split(',')[0],
+      description: '',
+      channelId: fallbackChannel?.id ?? '',
+      channelTitle: fallbackChannel?.title ?? '',
+      publishedAt: '',
+      thumbnail: `https://i.ytimg.com/vi/${id}/oar2.jpg`,
+      durationSec: 0,
+      views: parseCount(viewsTxt),
+      likes: 0,
+      categoryId: '',
+      live: false,
+      isShort: true,
+    }
+  }
   if (type === 'LockupView') {
     if (n.content_type !== 'VIDEO' || !n.content_id) return null
     const id: string = n.content_id
@@ -136,6 +156,7 @@ function toVideo(n: any, fallbackChannel?: { id: string; title: string }): Video
     likes: 0,
     categoryId: '',
     live: !durationSec && (liveBadge || /watching/i.test(viewsTxt)),
+    channelAvatar: bestThumb(n.author?.thumbnails) || undefined,
   }
 }
 
@@ -200,6 +221,23 @@ export async function trending(categoryId?: string, pageToken?: string) {
 export async function search(q: string, pageToken?: string) {
   const r = pageToken ? await resume(pageToken) : await (await yt()).search(q, { type: 'video' })
   return { videos: toVideos(r.videos), next: remember(r) }
+}
+
+export async function shorts(q: string, pageToken?: string) {
+  const r = pageToken ? await resume(pageToken) : await (await yt()).search(q, { type: 'shorts' })
+  // On ne garde que de vrais formats courts (la recherche peut mêler des vidéos classiques).
+  const videos = toVideos(r.videos)
+    .filter((v) => v.isShort || (v.durationSec > 0 && v.durationSec <= 180))
+    .map((v) => ({ ...v, isShort: true }))
+  return { videos, next: remember(r) }
+}
+
+export async function channelShorts(channelId: string) {
+  const c: any = await rawChannel(channelId)
+  if (!c.has_shorts) return { videos: [] as Video[], next: undefined as string | undefined }
+  const tab = await c.getShorts()
+  const fallback = { id: channelId, title: c.metadata?.title ?? '' }
+  return { videos: toVideos(tab.videos, fallback).map((v) => ({ ...v, isShort: true })), next: remember(tab) }
 }
 
 export async function video(id: string): Promise<Video> {

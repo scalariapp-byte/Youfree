@@ -20,6 +20,9 @@ export interface Video {
   likes: number
   categoryId: string
   live: boolean
+  /** Format vertical court (Shorts). */
+  isShort?: boolean
+  channelAvatar?: string
 }
 
 export interface Channel extends LocalChannel {
@@ -115,16 +118,21 @@ function toVideo(item: any): Video {
 // Catégorie 20 = « Jeux vidéo ».
 export const GAMING_CATEGORY = '20'
 
-/** Applique les filtres utilisateur : Shorts et jeux vidéo. */
+/** Applique les filtres utilisateur (catégorie Jeux vidéo). */
 export function applyFilters(videos: Video[]): Video[] {
-  const { hideShorts, hideGaming } = getSettings()
-  return videos.filter((v) => {
-    if (!v.id) return false
-    if (hideShorts && !v.live && v.durationSec > 0 && v.durationSec <= 60) return false
-    if (hideShorts && /#shorts?\b/i.test(v.title + ' ' + v.description.slice(0, 300))) return false
-    if (hideGaming && v.categoryId === GAMING_CATEGORY) return false
-    return true
-  })
+  const { hideGaming } = getSettings()
+  return videos.filter((v) => v.id && !(hideGaming && v.categoryId === GAMING_CATEGORY))
+}
+
+export const isShortVideo = (v: Video) =>
+  !!v.isShort || (!v.live && v.durationSec > 0 && v.durationSec <= 60) || /#shorts?\b/i.test(v.title)
+
+/** Sépare les Shorts des vidéos classiques : ils ont leur propre étagère et leur lecteur vertical. */
+export function splitShorts(list: Video[]) {
+  const videos: Video[] = []
+  const shorts: Video[] = []
+  list.forEach((v) => (isShortVideo(v) ? shorts : videos).push(v))
+  return { videos, shorts }
 }
 
 /** Détails complets de vidéos (50 max par appel, 1 unité de quota). */
@@ -223,6 +231,48 @@ export async function getComments(videoId: string): Promise<Comment[]> {
     if ((e as ApiError).code === 'other') return [] // commentaires désactivés
     throw e
   }
+}
+
+// ---------- Shorts
+
+const SHORTS_QUERIES: Record<string, string> = {
+  '': 'shorts',
+  '10': 'musique shorts',
+  '25': 'actualité shorts',
+  '28': 'tech shorts',
+  '27': 'apprendre shorts',
+  '17': 'sport shorts',
+  '24': 'drôle shorts',
+  '23': 'humour shorts',
+  '1': 'film shorts',
+  '26': 'recette shorts',
+  '2': 'voiture shorts',
+}
+
+export async function getShorts(categoryId?: string, pageToken?: string) {
+  const q = SHORTS_QUERIES[categoryId ?? ''] ?? SHORTS_QUERIES['']
+  if (useLocal()) {
+    const r = await (await loadLocal()).shorts(q, pageToken)
+    return { videos: applyFilters(r.videos), next: r.next }
+  }
+  const data = await call('search', {
+    part: 'snippet',
+    type: 'video',
+    videoDuration: 'short',
+    q: q.replace('shorts', '#shorts'),
+    maxResults: 30,
+    regionCode: getSettings().region,
+    pageToken,
+  })
+  const ids = data.items.map((i: any) => i.id.videoId).filter(Boolean)
+  const videos = (ids.length ? await getVideos(ids) : []).filter((v) => v.durationSec > 0 && v.durationSec <= 180)
+  return { videos: applyFilters(videos.map((v) => ({ ...v, isShort: true }))), next: data.nextPageToken as string | undefined }
+}
+
+export async function getChannelShorts(channelId: string) {
+  if (useLocal()) return (await loadLocal()).channelShorts(channelId)
+  const r = await getPlaylistVideos(uploadsOf(channelId), 50)
+  return { videos: r.videos.filter(isShortVideo), next: undefined as string | undefined }
 }
 
 // ---------- Compte Google

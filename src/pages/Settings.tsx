@@ -125,16 +125,27 @@ export function Settings() {
       </section>
 
       <section>
-        <h2>Ce que tu ne veux pas voir</h2>
+        <h2>Contenu</h2>
         <label className="toggle">
-          <input type="checkbox" checked={s.hideShorts} onChange={(e) => saveSettings({ hideShorts: e.target.checked })} />
-          Masquer les Shorts (vidéos ≤ 60 s ou marquées #shorts)
+          <input type="checkbox" checked={s.showShorts} onChange={(e) => saveSettings({ showShorts: e.target.checked })} />
+          Afficher les Shorts (onglet dédié et étagères, séparés des vidéos classiques)
         </label>
         <label className="toggle">
           <input type="checkbox" checked={s.hideGaming} onChange={(e) => saveSettings({ hideGaming: e.target.checked })} />
           Masquer les vidéos de la catégorie « Jeux vidéo »
         </label>
-        <p className="muted">Les jeux intégrés (Playables), les publicités dans le flux et les Shorts forcés n’existent pas dans Youfree.</p>
+        <p className="muted">Les jeux intégrés (Playables) et les publicités dans le flux n’existent pas dans Youfree.</p>
+      </section>
+
+      <section>
+        <h2>Apparence</h2>
+        <div className="segmented">
+          {(['dark', 'light', 'system'] as const).map((t) => (
+            <button key={t} className={s.theme === t ? 'on' : ''} onClick={() => saveSettings({ theme: t })}>
+              {t === 'dark' ? 'Sombre' : t === 'light' ? 'Clair' : 'Système'}
+            </button>
+          ))}
+        </div>
       </section>
 
       <section>
