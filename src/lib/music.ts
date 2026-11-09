@@ -3,6 +3,7 @@ import { useSyncExternalStore } from 'react'
 import type { Track } from './innertube'
 import { getStreams } from './stream'
 import { audioBlobUrl } from './blobAudio'
+import { log } from './log'
 import { getSettings } from './storage'
 import { clearNowPlaying, setNowPlaying } from './background'
 
@@ -72,6 +73,7 @@ async function load(i: number) {
     mode = 'audio'
   } catch (e) {
     lastMusicError = (e as Error).message
+    log('musique', `${t.id} direct KO : ${lastMusicError} → lecteur intégré`)
     // Bascule sur le lecteur intégré invisible plutôt que de rester muet.
     try {
       await playEmbed(t.id)

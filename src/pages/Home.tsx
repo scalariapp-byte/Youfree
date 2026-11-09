@@ -11,6 +11,7 @@ import { useAsync } from '../lib/useAsync'
 import { useAllSubs } from '../lib/useSubs'
 import { useHistory, useSettings, useBlocked } from '../lib/storage'
 import { getShorts, getSubscriptionFeed, getTrending, isAvailable, splitShorts } from '../lib/youtube'
+import type { Video } from '../lib/youtube'
 import { Onboarding } from './Onboarding'
 import { onlyLang } from '../lib/i18n'
 
@@ -51,6 +52,21 @@ async function forYou(interests: string[]) {
   const out = []
   for (let i = 0; i < 30; i++) for (const l of lists) if (l[i]) out.push(l[i])
   return { videos: out, next: undefined }
+}
+
+function PopularFallback({ videos }: { videos: Video[] }) {
+  return (
+    <section>
+      <div className="section-head">
+        <h2>Pour toi</h2>
+      </div>
+      <VideoGrid>
+        {videos.map((v) => (
+          <VideoCard key={v.id} video={v} />
+        ))}
+      </VideoGrid>
+    </section>
+  )
 }
 
 export function Home() {
@@ -123,5 +139,16 @@ export function Home() {
         )}
       </section>,
   }
-  return <div className="page">{settings.homeOrder.map((k) => blocks[k])}</div>
+  const order = [...new Set([...settings.homeOrder, 'continue', 'shorts', 'subs', 'popular'])]
+  const shown = order.map((k) => blocks[k]).filter(Boolean)
+  return (
+    <div className="page">
+      {shown.length ? shown : (
+        <>
+          <div className="notice">Toutes les sections de l’accueil sont masquées. <Link to="/settings?pane=home">Les réactiver</Link></div>
+          {blocks.popular === false || !blocks.popular ? <PopularFallback videos={pop.videos} /> : null}
+        </>
+      )}
+    </div>
+  )
 }

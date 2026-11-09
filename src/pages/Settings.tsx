@@ -2,6 +2,8 @@ import { useState, type ChangeEvent } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { askPermission } from '../lib/notify'
 import { APK, BUILD, checkUpdate, useUpdate } from '../lib/update'
+import { copyReport, sendReport } from '../lib/report'
+import { clearLog } from '../lib/log'
 import { exportAll, importAll, importLocalSubs, saveSettings, toggleBlock, useBlocked, useLocalSubs, useSettings } from '../lib/storage'
 import { canUseLocal } from '../lib/nativeFetch'
 import { LANGS } from '../lib/i18n'
@@ -85,6 +87,19 @@ function UpdatePane() {
         )}
       </div>
       <Toggle on={s.autoUpdate} set={(v) => saveSettings({ autoUpdate: v })} label="Vérifier automatiquement" hint="Au lancement, au retour dans l’appli et toutes les 30 min" />
+      <label>Signaler un problème</label>
+      <p className="muted">Le rapport contient la version, ton téléphone, quelques réglages et le journal des dernières actions (erreurs, lectures, son). Aucune donnée personnelle.</p>
+      <div className="row-btns">
+        <button className="btn" onClick={sendReport}>
+          <Icon name="share" size={16} /> Envoyer le rapport
+        </button>
+        <button className="btn ghost" onClick={copyReport}>
+          Copier le rapport
+        </button>
+        <button className="btn ghost" onClick={clearLog}>
+          Effacer le journal
+        </button>
+      </div>
     </>
   )
 }

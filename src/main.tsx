@@ -1,6 +1,7 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import App from './App'
+import './lib/log'
 import { warmUp } from './lib/youtube'
 import { onStorageChange } from './lib/storage'
 import './styles.css'

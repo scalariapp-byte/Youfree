@@ -32,7 +32,8 @@ export async function systemShare(url: string, title: string) {
   try {
     if (isNative()) {
       const { Share } = await import('@capacitor/share')
-      await Share.share({ title, text: title, url, dialogTitle: 'Partager avec…' })
+      // Lien : partagé tel quel ; texte long (rapport) : envoyé comme texte.
+      await Share.share(url.startsWith('http') ? { title, text: title, url, dialogTitle: 'Partager avec…' } : { title, text: url, dialogTitle: 'Envoyer avec…' })
     } else if (navigator.share) await navigator.share({ title, url })
     else await navigator.clipboard?.writeText(url)
   } catch {

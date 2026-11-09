@@ -8,6 +8,7 @@ import { pauseMusic } from '../lib/music'
 import { canUseLocal } from '../lib/nativeFetch'
 import { getStreams, type Streams } from '../lib/stream'
 import { audioBlobUrl } from '../lib/blobAudio'
+import { log } from '../lib/log'
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 declare global {
@@ -66,6 +67,7 @@ function DirectPlayer({ id, start, onEnded, onFail, loop, bare, paused, title = 
         const low = !r.qualities.length || r.qualities[0].height < 480
         if (r.hls && low && !bare) r = { ...r, audio: undefined, qualities: [], video: r.hls }
         mark('flux')
+        log(bare ? 'short' : 'vidéo', `${id} flux ok client=${r.client} qualités=${r.qualities.map((q) => q.height).join(',') || 'hls'} audio=${r.audio ? 'séparé' : 'aucun'} mode=${localStorage.getItem('youfree:audioBlob') === '1' ? 'blob' : 'direct'}`)
         setS(r)
         if (r.audio) {
           const fmt = r.formats.find((f) => f.url === r.audio)
@@ -74,7 +76,7 @@ function DirectPlayer({ id, start, onEnded, onFail, loop, bare, paused, title = 
         }
         setSrc((r.qualities.find((q) => q.height <= settings.quality) ?? r.qualities[r.qualities.length - 1])?.url ?? r.video)
       },
-      (e) => ok && onFail((e as Error).message),
+      (e) => (log('vidéo', `${id} flux KO : ${(e as Error).message}`), ok && onFail((e as Error).message)),
     )
     return () => {
       ok = false
@@ -153,7 +155,7 @@ function DirectPlayer({ id, start, onEnded, onFail, loop, bare, paused, title = 
         loop={loop || looping}
         style={{ objectFit: bare ? 'cover' : settings.fit }}
         onLoadedMetadata={(e) => ((e.currentTarget.playbackRate = settings.speed), mark('métadonnées'))}
-        onPlaying={() => mark('première image')}
+        onPlaying={() => (mark('première image'), log(bare ? 'short' : 'vidéo', `${id} image ok, son ${a.current ? (a.current.paused ? 'EN PAUSE' : 'joue') : 'absent'}`))}
         onEnded={() => (updatePosition(id, 0), onEnded?.())}
         onError={() => onFail('lecture refusée par le serveur vidéo')}
       />
@@ -165,6 +167,7 @@ function DirectPlayer({ id, start, onEnded, onFail, loop, bare, paused, title = 
           loop={loop}
           onCanPlay={(e) => {
             mark('son')
+            log(bare ? 'short' : 'vidéo', `${id} son prêt (${audioSrc.startsWith('blob:') ? 'blob' : 'direct'})`)
             // Piste prête après le démarrage de l'image : on la cale et on la lance.
             const vid = v.current
             if (vid && !vid.paused) {
@@ -175,9 +178,10 @@ function DirectPlayer({ id, start, onEnded, onFail, loop, bare, paused, title = 
           onError={() => {
             // URL directe refusée : on télécharge la piste par la couche native.
             const fmt = s.formats.find((f) => f.url === s.audio)
+            log(bare ? 'short' : 'vidéo', `${id} son refusé (${audioSrc.startsWith('blob:') ? 'blob' : 'direct'}) code=${a.current?.error?.code} ${fmt?.mime ?? ''}`)
             if (!fmt || audioSrc.startsWith('blob:')) return onFail('piste audio refusée')
             localStorage.setItem('youfree:audioBlob', '1')
-            audioBlobUrl(fmt.url, fmt.mime).then(setAudioSrc, () => onFail('piste audio refusée'))
+            audioBlobUrl(fmt.url, fmt.mime).then(setAudioSrc, (er) => (log('vidéo', `${id} blob KO : ${er.message}`), onFail('piste audio refusée')))
           }}
         />
       )}
@@ -256,6 +260,9 @@ function DirectPlayer({ id, start, onEnded, onFail, loop, bare, paused, title = 
             <button className={stats ? 'on' : ''} onClick={() => setStats(!stats)}>
               <Icon name="chart" size={16} /> Statistiques
             </button>
+            <button onClick={() => import('../lib/report').then((r) => r.sendReport())}>
+              <Icon name="share" size={16} /> Rapport
+            </button>
             <button onClick={() => v.current && (v.current.currentTime -= 10)}>−10 s</button>
             <button onClick={() => v.current && (v.current.currentTime += 10)}>+10 s</button>
           </div>
@@ -268,6 +275,7 @@ function DirectPlayer({ id, start, onEnded, onFail, loop, bare, paused, title = 
 export function Player(props: { id: string; start?: number; onEnded?: () => void; loop?: boolean; bare?: boolean; paused?: boolean; title?: string; artist?: string }) {
   const settings = useSettings()
   const [failed, setFailed] = useState<{ id: string; why: string } | null>(null)
+  useEffect(() => void (failed && log('vidéo', `${failed.id} repli lecteur YouTube : ${failed.why}`)), [failed])
   if (settings.player === 'direct' && canUseLocal() && failed?.id !== props.id)
     return <DirectPlayer id={props.id} start={props.start ?? 0} onEnded={props.onEnded} onFail={(why) => setFailed({ id: props.id, why })} loop={props.loop} bare={props.bare} paused={props.paused} title={props.title} artist={props.artist} />
   if (props.paused) return <div className="player" />
