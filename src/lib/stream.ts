@@ -45,7 +45,7 @@ async function fetchStreams(id: string, skip?: string): Promise<Streams> {
       if (!sd) throw new Error(info.playability_status?.reason || info.playability_status?.status || 'pas de flux')
       const formats: Fmt[] = [...(sd.formats ?? []), ...(sd.adaptive_formats ?? [])]
         .filter((f: any) => f.url)
-        .map((f: any) => ({ url: f.url, height: f.height ?? 0, mime: f.mime_type ?? '', bitrate: f.bitrate ?? 0, audio: !!f.has_audio, video: !!f.has_video }))
+        .map((f: any) => ({ url: f.url, height: f.width && f.height ? Math.min(f.width, f.height) : f.height ?? 0, mime: f.mime_type ?? '', bitrate: f.bitrate ?? 0, audio: !!f.has_audio, video: !!f.has_video }))
       const hls: string | undefined = sd.hls_manifest_url && canHls() ? sd.hls_manifest_url : undefined
       if (!formats.length && !hls) throw new Error('URL chiffrées')
       const audio = formats.filter((f) => f.audio && !f.video).sort((a, b) => (/mp4/.test(b.mime) ? 1 : 0) - (/mp4/.test(a.mime) ? 1 : 0) || b.bitrate - a.bitrate)[0]

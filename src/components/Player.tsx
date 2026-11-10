@@ -245,7 +245,10 @@ function DirectPlayer({ id, start, onEnded, onFail: giveUp, loop, bare, paused, 
         onEnded={() => (updatePosition(id, 0), onEnded?.())}
         onError={() => {
           // Qualité refusée par le serveur : on tente les autres avant de se replier.
-          const rest = s.qualities.filter((q) => q.url !== src && !triedQ.current.includes(q.url))
+          const curH = s.qualities.find((q) => q.url === src)?.height ?? Infinity
+          const untried = s.qualities.filter((q) => q.url !== src && !triedQ.current.includes(q.url))
+          // D'abord la qualité juste en dessous, puis les autres.
+          const rest = [...untried.filter((q) => q.height < curH), ...untried.filter((q) => q.height >= curH).reverse()]
           if (rest.length && triedQ.current.length < 3) {
             triedQ.current.push(src)
             log(bare ? 'short' : 'vidéo', `${id} qualité refusée, essai ${rest[0].height}p`)
