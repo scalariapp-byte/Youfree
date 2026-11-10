@@ -12,14 +12,25 @@ const subs = new Set<() => void>()
 const set = (p: Partial<typeof state>) => ((state = { ...state, ...p }), subs.forEach((f) => f()))
 export const useUpdate = () => useSyncExternalStore((f) => (subs.add(f), () => subs.delete(f)), () => state)
 
+const VERSION = 'https://github.com/scalariapp-byte/Youfree/releases/download/android-latest/version.json'
+
 export async function checkUpdate() {
   if (!isNative()) return set({ error: 'Disponible dans l’application Android' })
   set({ checking: true, error: '' })
   try {
-    const txt = await (await localFetch(`${API}?t=${Date.now()}`, { headers: { Accept: 'application/vnd.github+json' } })).text()
-    const body = String(JSON.parse(txt).body ?? '')
-    const latest = Number(body.match(/build\s+(\d+)/i)?.[1] ?? 0)
-    const notes = (body.split('\n').find((l) => l.startsWith('Nouveautés')) ?? '').replace(/^Nouveautés\s*:\s*/, '')
+    // Fichier de version publié avec l'APK (pas de limite de requêtes), sinon API GitHub.
+    let latest = 0
+    let notes = ''
+    try {
+      const v = JSON.parse(await (await localFetch(`${VERSION}?t=${Date.now()}`)).text())
+      latest = Number(v.build) || 0
+      notes = String(v.notes ?? '')
+    } catch {
+      const body = String(JSON.parse(await (await localFetch(`${API}?t=${Date.now()}`, { headers: { Accept: 'application/vnd.github+json' } })).text()).body ?? '')
+      latest = Number(body.match(/build\s+(\d+)/i)?.[1] ?? 0)
+      notes = (body.split('\n').find((l) => l.startsWith('Nouveautés')) ?? '').replace(/^Nouveautés\s*:\s*/, '')
+    }
+    if (!latest) throw new Error('réponse vide')
     set({ latest, notes, checkedAt: Date.now() })
   } catch {
     set({ error: 'Vérification impossible (réseau)' })
@@ -29,7 +40,8 @@ export async function checkUpdate() {
 }
 
 export function startAutoUpdate() {
-  const auto = () => getSettings().autoUpdate && checkUpdate()
+  // Automatique : au plus une vérification toutes les 10 minutes.
+  const auto = () => getSettings().autoUpdate && Date.now() - state.checkedAt > 10 * 60_000 && !state.checking && checkUpdate()
   auto()
   document.addEventListener('visibilitychange', () => !document.hidden && auto())
   setInterval(auto, 30 * 60_000)

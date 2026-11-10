@@ -48,3 +48,42 @@ export function audioBlobUrl(url: string, mime: string): Promise<string> {
   }
   return cache.get(url)!
 }
+
+/**
+ * Lecture progressive (MediaSource) : le son démarre dès le premier morceau téléchargé
+ * (≈ 256 Ko) au lieu d'attendre la piste entière. Renvoie null si non pris en charge.
+ */
+export function streamAudioUrl(url: string, mime: string, onError: (e: Error) => void): string | null {
+  if (!isNative() || typeof MediaSource === 'undefined' || !MediaSource.isTypeSupported(mime)) return null
+  const ms = new MediaSource()
+  const obj = URL.createObjectURL(ms)
+  ms.addEventListener(
+    'sourceopen',
+    async () => {
+      try {
+        const sb = ms.addSourceBuffer(mime)
+        const append = (b: Uint8Array) =>
+          new Promise<void>((ok, ko) => {
+            sb.addEventListener('updateend', () => ok(), { once: true })
+            sb.addEventListener('error', () => ko(new Error('ajout refusé')), { once: true })
+            sb.appendBuffer(b as BufferSource)
+          })
+        let from = 0
+        let total = Infinity
+        let size = 256 << 10
+        while (from < total && ms.readyState === 'open') {
+          const r = await range(url, from, from + size - 1)
+          total = r.total
+          await append(r.bytes)
+          from += r.bytes.length
+          size = 1 << 20
+        }
+        if (ms.readyState === 'open') ms.endOfStream()
+      } catch (e) {
+        onError(e as Error)
+      }
+    },
+    { once: true },
+  )
+  return obj
+}

@@ -40,6 +40,8 @@ jobs:
           for i in 1 2 3; do ./gradlew assembleRelease --no-daemon -PversionCode=${{ github.run_number }} && exit 0; echo "Tentative $i échouée"; sleep $((i*20)); done
           exit 1
       - run: cp android/app/build/outputs/apk/release/app-release.apk youfree.apk
+      - name: Fichier de version (vérification des mises à jour sans limite d'API)
+        run: node -e "require('fs').writeFileSync('version.json', JSON.stringify({ build: ${{ github.run_number }}, notes: process.env.NOTES }))"
       - uses: actions/upload-artifact@v4
         with:
           name: youfree-apk
@@ -50,7 +52,9 @@ jobs:
           tag_name: android-latest
           name: Youfree Android (dernière version)
           prerelease: true
-          files: youfree.apk
+          files: |
+            youfree.apk
+            version.json
           body: |
             build ${{ github.run_number }}
             Nouveautés : ${{ env.NOTES }}

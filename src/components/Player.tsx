@@ -7,7 +7,7 @@ import { clearNowPlaying, nowPlayingOwner, setNowPlaying } from '../lib/backgrou
 import { pauseMusic } from '../lib/music'
 import { canUseLocal } from '../lib/nativeFetch'
 import { getStreams, getStreamsOther, type Streams } from '../lib/stream'
-import { audioBlobUrl } from '../lib/blobAudio'
+import { audioBlobUrl, streamAudioUrl } from '../lib/blobAudio'
 import { log } from '../lib/log'
 import { netCap } from '../lib/net'
 
@@ -111,8 +111,12 @@ function DirectPlayer({ id, start, onEnded, onFail: giveUp, loop, bare, paused, 
         setS(r)
         if (r.audio) {
           const fmt = r.formats.find((f) => f.url === r.audio)
-          if (localStorage.getItem('youfree:audioBlob') === '1' && fmt) audioBlobUrl(fmt.url, fmt.mime).then((u) => ok && setAudioSrc(u), () => ok && setAudioSrc(r.audio!))
-          else setAudioSrc(r.audio)
+          if (localStorage.getItem('youfree:audioBlob') === '1' && fmt) {
+            // Son progressif : démarre dès le premier morceau ; sinon piste entière en mémoire.
+            const live = streamAudioUrl(fmt.url, fmt.mime, () => ok && audioBlobUrl(fmt.url, fmt.mime).then(setAudioSrc, () => setAudioSrc(r.audio!)))
+            if (live) setAudioSrc(live)
+            else audioBlobUrl(fmt.url, fmt.mime).then((u) => ok && setAudioSrc(u), () => ok && setAudioSrc(r.audio!))
+          } else setAudioSrc(r.audio)
         }
         // Shorts : 1080p max (écran de téléphone) ; vidéos : qualité préférée.
         // Qualité de départ limitée par la connexion (mauvais réseau : 144p-480p).
@@ -260,7 +264,7 @@ function DirectPlayer({ id, start, onEnded, onFail: giveUp, loop, bare, paused, 
             if (readyFor.current === audioSrc) return
             readyFor.current = audioSrc
             mark('son')
-            log(bare ? 'short' : 'vidéo', `${id} son prêt (${audioSrc.startsWith('blob:') ? 'blob' : 'direct'})`)
+            log(bare ? 'short' : 'vidéo', `${id} son prêt (${audioSrc.startsWith('blob:') ? 'mémoire' : 'direct'}) en ${Math.round(performance.now() - mountAt.current)} ms`)
             const vid = v.current
             if (vid && !vid.paused) {
               if (Math.abs(e.currentTarget.currentTime - vid.currentTime) > 0.5) e.currentTarget.currentTime = vid.currentTime
@@ -278,7 +282,10 @@ function DirectPlayer({ id, start, onEnded, onFail: giveUp, loop, bare, paused, 
             const next = audioSrc.startsWith('blob:') ? others.find((f) => f.url !== fmt.url) : fmt
             if (!next || triedA.current.length >= 3) return onFail('piste audio refusée')
             triedA.current.push(next.url)
-            audioBlobUrl(next.url, next.mime).then(setAudioSrc, (er) => (log('vidéo', `${id} blob KO : ${er.message}`), onFail('piste audio refusée')))
+            const viaBlob = () => audioBlobUrl(next.url, next.mime).then(setAudioSrc, (er) => (log('vidéo', `${id} blob KO : ${er.message}`), onFail('piste audio refusée')))
+            const live = !audioSrc.startsWith('blob:') ? streamAudioUrl(next.url, next.mime, () => void viaBlob()) : null
+            if (live) setAudioSrc(live)
+            else viaBlob()
           }}
         />
       )}
