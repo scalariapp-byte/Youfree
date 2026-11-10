@@ -1,6 +1,11 @@
 package app.youfree;
 
+import android.app.Activity;
 import android.content.ContentValues;
+import android.content.Intent;
+import android.provider.DocumentsContract;
+import androidx.activity.result.ActivityResult;
+import com.getcapacitor.annotation.ActivityCallback;
 import android.media.MediaCodec;
 import android.media.MediaExtractor;
 import android.media.MediaFormat;
@@ -40,7 +45,7 @@ public class YoutmusicDownloaderPlugin extends Plugin {
                 fetch(audio, a, 80, 95);
                 progress(96, "Assemblage");
                 mux(v, a, out, ext.equals("webm") ? MediaMuxer.OutputFormat.MUXER_OUTPUT_WEBM : MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4);
-                String path = save(out, title + "." + ext, ext.equals("webm") ? "video/webm" : "video/mp4");
+                String path = save(out, title + "." + ext, ext.equals("webm") ? "video/webm" : "video/mp4", call.getString("folder"));
                 progress(100, "Terminé");
                 JSObject r = new JSObject();
                 r.put("path", path);
@@ -63,7 +68,7 @@ public class YoutmusicDownloaderPlugin extends Plugin {
             try (OutputStream os = new FileOutputStream(tmp)) {
                 os.write(call.getString("text", "").getBytes("UTF-8"));
             }
-            String path = save(tmp, call.getString("name", "youtmusic.json"), "application/json");
+            String path = save(tmp, call.getString("name", "youtmusic.json"), "application/json", call.getString("folder"));
             tmp.delete();
             JSObject r = new JSObject();
             r.put("path", path);
@@ -138,7 +143,70 @@ public class YoutmusicDownloaderPlugin extends Plugin {
         }
     }
 
-    private String save(File src, String name, String mime) throws Exception {
+    /** Choix d'un dossier (sélecteur Android) ; l'accès est conservé pour les prochaines fois. */
+    @PluginMethod
+    public void pickFolder(PluginCall call) {
+        Intent i = new Intent(Intent.ACTION_OPEN_DOCUMENT_TREE);
+        i.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION | Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION);
+        startActivityForResult(call, i, "onFolder");
+    }
+
+    @ActivityCallback
+    private void onFolder(PluginCall call, ActivityResult result) {
+        if (call == null) return;
+        if (result.getResultCode() != Activity.RESULT_OK || result.getData() == null) {
+            call.reject("Annulé");
+            return;
+        }
+        Uri tree = result.getData().getData();
+        getContext().getContentResolver().takePersistableUriPermission(tree, Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+        JSObject r = new JSObject();
+        r.put("uri", tree.toString());
+        String id = DocumentsContract.getTreeDocumentId(tree);
+        r.put("label", id.contains(":") ? id.substring(id.indexOf(':') + 1) : id);
+        call.resolve(r);
+    }
+
+    /** « Exporter vers… » : l'utilisateur choisit l'emplacement et le nom du fichier. */
+    @PluginMethod
+    public void saveTextAs(PluginCall call) {
+        Intent i = new Intent(Intent.ACTION_CREATE_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE).setType("application/json");
+        i.putExtra(Intent.EXTRA_TITLE, call.getString("name", "youtmusic.json"));
+        startActivityForResult(call, i, "onCreateDoc");
+    }
+
+    @ActivityCallback
+    private void onCreateDoc(PluginCall call, ActivityResult result) {
+        if (call == null) return;
+        if (result.getResultCode() != Activity.RESULT_OK || result.getData() == null) {
+            call.reject("Annulé");
+            return;
+        }
+        Uri uri = result.getData().getData();
+        try (OutputStream os = getContext().getContentResolver().openOutputStream(uri)) {
+            os.write(call.getString("text", "").getBytes("UTF-8"));
+            JSObject r = new JSObject();
+            r.put("path", uri.getLastPathSegment());
+            call.resolve(r);
+        } catch (Exception e) {
+            call.reject("Export impossible : " + e.getMessage());
+        }
+    }
+
+    private String save(File src, String name, String mime, String folder) throws Exception {
+        if (folder != null && !folder.isEmpty()) {
+            // Dossier choisi par l'utilisateur.
+            Uri tree = Uri.parse(folder);
+            Uri dir = DocumentsContract.buildDocumentUriUsingTree(tree, DocumentsContract.getTreeDocumentId(tree));
+            Uri doc = DocumentsContract.createDocument(getContext().getContentResolver(), dir, mime, name);
+            try (OutputStream os = getContext().getContentResolver().openOutputStream(doc); InputStream is = new FileInputStream(src)) {
+                byte[] b = new byte[1 << 16];
+                int n;
+                while ((n = is.read(b)) > 0) os.write(b, 0, n);
+            }
+            String id = DocumentsContract.getTreeDocumentId(tree);
+            return (id.contains(":") ? id.substring(id.indexOf(':') + 1) : id) + "/" + name;
+        }
         if (Build.VERSION.SDK_INT >= 29) {
             ContentValues cv = new ContentValues();
             cv.put(MediaStore.Downloads.DISPLAY_NAME, name);

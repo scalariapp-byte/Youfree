@@ -4,7 +4,7 @@ import { askPermission } from '../lib/notify'
 import { APK, BUILD, checkUpdate, useUpdate } from '../lib/update'
 import { copyReport, sendReport } from '../lib/report'
 import { clearLog } from '../lib/log'
-import { exportAll, importAll, importLocalSubs, saveSettings, toggleBlock, useBlocked, useLocalSubs, useSettings } from '../lib/storage'
+import { getSettings, exportAll, importAll, importLocalSubs, saveSettings, toggleBlock, useBlocked, useLocalSubs, useSettings } from '../lib/storage'
 import { canUseLocal } from '../lib/nativeFetch'
 import { LANGS } from '../lib/i18n'
 import { isNative } from '../lib/nativeFetch'
@@ -18,12 +18,30 @@ import { NotifPanel } from '../components/NotifPanel'
 const REGIONS = ['FR', 'BE', 'CH', 'CA', 'LU', 'MA', 'DZ', 'TN', 'SN', 'US', 'GB', 'DE', 'ES', 'IT', 'PT', 'BR', 'MX']
 
 /** Export : fichier JSON dans Téléchargements/Youtmusic (natif), sinon téléchargement navigateur. */
+interface Files {
+  saveText(o: { name: string; text: string; folder?: string }): Promise<{ path: string }>
+  saveTextAs(o: { name: string; text: string }): Promise<{ path: string }>
+  pickFolder(): Promise<{ uri: string; label: string }>
+}
+const files = async () => (await import('@capacitor/core')).registerPlugin<Files>('YoutmusicDownloader')
+
+/** Choix du dossier où sont enregistrés exports et vidéos téléchargées. */
+async function chooseFolder(): Promise<string> {
+  const r = await (await files()).pickFolder()
+  saveSettings({ folderUri: r.uri, folderLabel: r.label })
+  return `Dossier choisi : ${r.label}`
+}
+
+/** « Exporter vers… » : emplacement et nom choisis à chaque fois. */
+async function exportAs(): Promise<string> {
+  const r = await (await files()).saveTextAs({ name: `youtmusic-donnees-${new Date().toISOString().slice(0, 10)}.json`, text: exportAll() })
+  return `Données enregistrées (${r.path})`
+}
+
 async function exportData(): Promise<string> {
   const name = `youtmusic-donnees-${new Date().toISOString().slice(0, 10)}.json`
   if (isNative()) {
-    const { registerPlugin } = await import('@capacitor/core')
-    const P = registerPlugin<{ saveText(o: { name: string; text: string }): Promise<{ path: string }> }>('YoutmusicDownloader')
-    const r = await P.saveText({ name, text: exportAll() })
+    const r = await (await files()).saveText({ name, text: exportAll(), folder: getSettings().folderUri || undefined })
     return `Données enregistrées dans ${r.path}`
   }
   download(name, exportAll())
@@ -408,8 +426,25 @@ export function Settings() {
                 Importer Google Takeout
                 <input type="file" accept=".csv" hidden onChange={onFile('takeout')} />
               </label>
+              <div className="pref grow">
+                <span>
+                  <strong>Dossier de stockage</strong>
+                  <small>{s.folderLabel || 'Téléchargements/Youtmusic (par défaut)'} · exports et vidéos téléchargées</small>
+                </span>
+                <button className="btn small ghost" disabled={!isNative()} onClick={() => chooseFolder().then(setMsg, (e) => setMsg((e as Error).message))}>
+                  Choisir
+                </button>
+              </div>
+              {s.folderUri && (
+                <button className="link" onClick={() => saveSettings({ folderUri: '', folderLabel: '' })}>
+                  Revenir au dossier par défaut
+                </button>
+              )}
               <button className="btn" onClick={() => exportData().then(setMsg, (e) => setMsg((e as Error).message))}>
                 <Icon name="download" size={16} /> Exporter mes données
+              </button>
+              <button className="btn ghost" disabled={!isNative()} onClick={() => exportAs().then(setMsg, (e) => setMsg((e as Error).message))}>
+                Exporter vers… (choisir l’emplacement)
               </button>
               <label className="btn ghost">
                 Restaurer une sauvegarde
