@@ -55,6 +55,24 @@ public class YoutmusicDownloaderPlugin extends Plugin {
         }).start();
     }
 
+    /** Enregistre un texte (export des données) dans Téléchargements/Youtmusic. */
+    @PluginMethod
+    public void saveText(PluginCall call) {
+        try {
+            File tmp = new File(getContext().getCacheDir(), "export.json");
+            try (OutputStream os = new FileOutputStream(tmp)) {
+                os.write(call.getString("text", "").getBytes("UTF-8"));
+            }
+            String path = save(tmp, call.getString("name", "youtmusic.json"), "application/json");
+            tmp.delete();
+            JSObject r = new JSObject();
+            r.put("path", path);
+            call.resolve(r);
+        } catch (Exception e) {
+            call.reject("Export impossible : " + e.getMessage());
+        }
+    }
+
     private void progress(int p, String step) {
         JSObject o = new JSObject();
         o.put("percent", p);
