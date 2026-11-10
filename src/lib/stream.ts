@@ -28,20 +28,20 @@ const CLIENTS = ['ANDROID_VR', 'IOS', 'ANDROID'] as const
 const cache = new Map<string, Promise<Streams>>()
 export let lastStreamError = ''
 
-async function fetchStreams(id: string): Promise<Streams> {
+async function fetchStreams(id: string, skip?: string): Promise<Streams> {
   const yt = await (await import('./innertube')).getClient()
   const errors: string[] = []
   const timings: string[] = []
   const t0 = performance.now()
   const lap = (label: string) => timings.push(`${label} : ${Math.round(performance.now() - t0)} ms`)
   const best = localStorage.getItem('youfree:client')
-  const order = best ? [best, ...CLIENTS.filter((c) => c !== best)] : [...CLIENTS]
+  const order = (best ? [best, ...CLIENTS.filter((c) => c !== best)] : [...CLIENTS]).filter((c) => c !== skip)
   for (const client of order as (typeof CLIENTS)[number][]) {
     try {
       const info: any = await yt.getBasicInfo(id, { client })
       lap(`réponse ${client}`)
       const sd = info.streaming_data
-      if (sd) localStorage.setItem('youfree:client', client)
+      if (sd && !skip) localStorage.setItem('youfree:client', client)
       if (!sd) throw new Error(info.playability_status?.reason || info.playability_status?.status || 'pas de flux')
       const formats: Fmt[] = [...(sd.formats ?? []), ...(sd.adaptive_formats ?? [])]
         .filter((f: any) => f.url)
@@ -86,6 +86,9 @@ export function getStreams(id: string): Promise<Streams> {
   }
   return cache.get(id)!
 }
+
+/** Nouvelle récupération avec un autre client (pistes différentes), sans cache. */
+export const getStreamsOther = (id: string, skip: string) => fetchStreams(id, skip)
 
 /** Options de téléchargement : meilleure vidéo par hauteur (jusqu'à 4K) + piste audio compatible. */
 export function downloadOptions(s: Streams) {

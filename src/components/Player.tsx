@@ -6,7 +6,7 @@ import { Icon } from './Icon'
 import { clearNowPlaying, nowPlayingOwner, setNowPlaying } from '../lib/background'
 import { pauseMusic } from '../lib/music'
 import { canUseLocal } from '../lib/nativeFetch'
-import { getStreams, type Streams } from '../lib/stream'
+import { getStreams, getStreamsOther, type Streams } from '../lib/stream'
 import { audioBlobUrl } from '../lib/blobAudio'
 import { log } from '../lib/log'
 
@@ -33,9 +33,44 @@ export function loadYT() {
 }
 
 /** Lecteur natif sans pub : vidéo et audio séparés, synchronisés. */
-function DirectPlayer({ id, start, onEnded, onFail, loop, bare, paused, title = '', artist = '' }: { id: string; start: number; onEnded?: () => void; onFail: (why: string) => void; loop?: boolean; bare?: boolean; paused?: boolean; title?: string; artist?: string }) {
+function DirectPlayer({ id, start, onEnded, onFail: giveUp, loop, bare, paused, title = '', artist = '' }: { id: string; start: number; onEnded?: () => void; onFail: (why: string) => void; loop?: boolean; bare?: boolean; paused?: boolean; title?: string; artist?: string }) {
   const settings = useSettings()
   const [s, setS] = useState<Streams | null>(null)
+  const rescue = useRef(0)
+  /** Avant d'abandonner : 1) format image+son tout-en-un, 2) autre client YouTube, 3) repli. */
+  const onFail = (why: string) => {
+    const cur = s
+    if (cur && rescue.current === 0) {
+      rescue.current = 1
+      const prog = cur.formats.filter((f) => f.audio && f.video).sort((a, b) => b.height - a.height)[0]
+      if (prog) {
+        log(bare ? 'short' : 'vidéo', `${id} ${why} → format tout-en-un ${prog.height}p`)
+        setAudioSrc('')
+        setS({ ...cur, audio: undefined, qualities: [{ height: prog.height, url: prog.url }], video: prog.url })
+        setSrc(prog.url)
+        return
+      }
+    }
+    if (cur && rescue.current <= 1) {
+      rescue.current = 2
+      log(bare ? 'short' : 'vidéo', `${id} ${why} → essai d'un autre client que ${cur.client}`)
+      getStreamsOther(id, cur.client).then(
+        (r) => {
+          triedA.current = []
+          triedQ.current = []
+          readyFor.current = ''
+          setS(r)
+          setSrc((r.qualities.find((q) => q.height <= 1080) ?? r.qualities[r.qualities.length - 1])?.url ?? r.video)
+          const fmt = r.formats.find((f) => f.url === r.audio)
+          if (fmt) audioBlobUrl(fmt.url, fmt.mime).then(setAudioSrc, () => setAudioSrc(r.audio!))
+          else setAudioSrc('')
+        },
+        () => giveUp(why),
+      )
+      return
+    }
+    giveUp(why)
+  }
   const [src, setSrc] = useState('')
   const [panel, setPanel] = useState(false)
   const [audioSrc, setAudioSrc] = useState('')
