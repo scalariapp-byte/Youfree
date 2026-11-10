@@ -344,6 +344,224 @@ Enfants|e_toys|Jouets|jouets|toys
 Enfants|e_crafts|Bricolage enfants|bricolage enfant|kids crafts
 Enfants|e_stories|Histoires|histoire pour enfants|kids stories
 Enfants|e_teen|Ados|ado|teens
+Musique|m2_amapiano|Amapiano|amapiano|amapiano
+Musique|m2_kompa|Afro-trap|afro trap|afro trap
+Musique|m2_coupe|Coupé-décalé|coupé décalé|coupe decale
+Musique|m2_bachata|Bachata|bachata|bachata
+Musique|m2_tango|Tango|tango|tango
+Musique|m2_samba|Samba & bossa|samba bossa nova|samba bossa nova
+Musique|m2_chanson|Chanson à texte|chanson française à texte|french chanson
+Musique|m2_acoustic|Acoustique|session acoustique|acoustic session
+Musique|m2_piano|Piano relaxant|piano relaxant|relaxing piano
+Musique|m2_sleep|Musique pour dormir|musique pour dormir|sleep music
+Musique|m2_focus|Musique pour travailler|musique concentration|focus music
+Musique|m2_workout|Musique de sport|musique sport motivation|workout music
+Musique|m2_80s|Années 80|tubes années 80|80s hits
+Musique|m2_90s|Années 90|tubes années 90|90s hits
+Musique|m2_2000s|Années 2000|tubes années 2000|2000s hits
+Musique|m2_charts|Top des ventes|top 50|top charts
+Musique|m2_newmusic|Nouveautés musique|nouveautés musique|new music
+Musique|m2_freestyle|Freestyles|freestyle rap|rap freestyle
+Musique|m2_battle|Battles de rap|battle rap|rap battle
+Musique|m2_producer|Producteurs|producteur musique|music producer
+Musique|m2_theory|Théorie musicale|théorie musicale|music theory
+Musique|m2_bass|Basse|basse tuto|bass guitar
+Musique|m2_sax|Saxophone|saxophone|saxophone
+Musique|m2_harp|Instruments rares|instrument rare|rare instruments
+Musique|m2_orchestra|Orchestre|orchestre|orchestra
+Sport|s2_nba_draft|NBA|nba|nba
+Sport|s2_euro|Équipe de France|équipe de france foot|france national team
+Sport|s2_worldcup|Coupe du monde|coupe du monde|world cup
+Sport|s2_jo|Jeux olympiques|jeux olympiques|olympics
+Sport|s2_tdf|Tour de France|tour de france|tour de france
+Sport|s2_rg|Roland-Garros|roland garros|roland garros
+Sport|s2_ufc|UFC|ufc|ufc
+Sport|s2_boxing|Boxe anglaise|boxe anglaise|boxing
+Sport|s2_kick|Kickboxing|kickboxing|kickboxing
+Sport|s2_bodybuilding|Bodybuilding|bodybuilding|bodybuilding
+Sport|s2_powerlifting|Force athlétique|powerlifting|powerlifting
+Sport|s2_parkour|Parkour|parkour|parkour
+Sport|s2_freestylefoot|Foot freestyle|football freestyle|football freestyle
+Sport|s2_skills|Gestes techniques|gestes techniques football|football skills
+Sport|s2_goals|Plus beaux buts|plus beaux buts|best goals
+Sport|s2_trail|Trail|trail running|trail running
+Sport|s2_triathlon|Triathlon|triathlon|triathlon
+Sport|s2_rowing|Aviron & kayak|aviron kayak|rowing kayak
+Sport|s2_sailing|Voile|voile régate|sailing
+Sport|s2_kite|Kitesurf|kitesurf|kitesurfing
+Sport|s2_esports_foot|Foot amateur|foot amateur|amateur football
+Sport|s2_referee|Arbitrage|arbitrage|refereeing
+Sport|s2_stretch|Étirements|étirements|stretching
+Sport|s2_homegym|Sport à la maison|sport à la maison|home workout
+Sport|s2_weightloss|Perte de poids|perte de poids|weight loss
+Jeux|g2_zelda|Zelda|zelda|zelda
+Jeux|g2_mario|Mario|mario|mario
+Jeux|g2_apex|Apex Legends|apex legends|apex legends
+Jeux|g2_cs|Counter-Strike|counter strike|counter strike
+Jeux|g2_rocket|Rocket League|rocket league|rocket league
+Jeux|g2_genshin|Genshin Impact|genshin impact|genshin impact
+Jeux|g2_amongus|Among Us|among us|among us
+Jeux|g2_sims|Les Sims|les sims|the sims
+Jeux|g2_brawl|Brawl Stars|brawl stars|brawl stars
+Jeux|g2_freefire|Free Fire|free fire|free fire
+Jeux|g2_wow|World of Warcraft|world of warcraft|world of warcraft
+Jeux|g2_elden|Elden Ring|elden ring|elden ring
+Jeux|g2_zombie|Jeux de zombies|jeu zombie|zombie games
+Jeux|g2_strategy|Stratégie|jeu de stratégie|strategy games
+Jeux|g2_simulator|Simulateurs|simulateur|simulator games
+Jeux|g2_vrgames|Jeux VR|jeu réalité virtuelle|vr games
+Jeux|g2_lore|Histoire des jeux|histoire jeu vidéo|video game lore
+Jeux|g2_news|Actu jeux vidéo|actualité jeux vidéo|gaming news
+Jeux|g2_tests|Tests de jeux|test jeu vidéo|game review
+Jeux|g2_letsplay|Let's play|let's play|lets play
+Divertissement|f2_animals_funny|Animaux drôles|animaux drôles|funny animals
+Divertissement|f2_babies|Bébés|bébés drôles|funny babies
+Divertissement|f2_dance_trends|Danses tendance|danse tendance|dance trends
+Divertissement|f2_lifehacks|Astuces de vie|astuces|life hacks
+Divertissement|f2_experiments|Expériences|expérience|experiments
+Divertissement|f2_build|Constructions|construction impressionnante|amazing builds
+Divertissement|f2_records|Records du monde|record du monde|world records
+Divertissement|f2_survival|Survie|survie|survival
+Divertissement|f2_social|Expériences sociales|expérience sociale|social experiment
+Divertissement|f2_dating|Rencards|rencard|dating
+Divertissement|f2_family|Vlogs famille|vlog famille|family vlog
+Divertissement|f2_couple|Vlogs couple|vlog couple|couple vlog
+Divertissement|f2_dayinlife|Journée type|une journée avec|day in the life
+Divertissement|f2_rich|Vie de luxe|vie de luxe|luxury life
+Divertissement|f2_ranking|Classements|top 10|top 10
+Divertissement|f2_facts|Le saviez-vous|le saviez vous|did you know
+Divertissement|f2_drama|Drama YouTube|drama youtube|youtube drama
+Divertissement|f2_gossip|People|people célébrités|celebrity news
+Divertissement|f2_karting|Karting|karting|karting
+Divertissement|f2_escape|Escape game|escape game|escape room
+Cinéma & séries|c2_recap|Résumés de films|résumé film|movie recap
+Cinéma & séries|c2_ending|Fins expliquées|fin expliquée|ending explained
+Cinéma & séries|c2_easter|Easter eggs|easter eggs film|movie easter eggs
+Cinéma & séries|c2_harrypotter|Harry Potter|harry potter|harry potter
+Cinéma & séries|c2_lotr|Seigneur des anneaux|seigneur des anneaux|lord of the rings
+Cinéma & séries|c2_dc|DC|dc comics|dc comics
+Cinéma & séries|c2_pixar|Pixar|pixar|pixar
+Cinéma & séries|c2_ghibli|Ghibli|studio ghibli|studio ghibli
+Cinéma & séries|c2_jjk|Jujutsu Kaisen|jujutsu kaisen|jujutsu kaisen
+Cinéma & séries|c2_aot|L'Attaque des Titans|attaque des titans|attack on titan
+Cinéma & séries|c2_demon|Demon Slayer|demon slayer|demon slayer
+Cinéma & séries|c2_simpsons|Simpson|les simpson|the simpsons
+Cinéma & séries|c2_sitcom|Sitcoms|sitcom|sitcom
+Cinéma & séries|c2_action|Films d'action|film d'action|action movies
+Cinéma & séries|c2_romance|Films romantiques|film romantique|romance movies
+Cinéma & séries|c2_bollywoodfilm|Films indiens|film indien|indian movies
+Cinéma & séries|c2_nollywood|Films africains|film africain|african movies
+Cinéma & séries|c2_casting|Castings & acteurs|acteur interview|actor interview
+Cinéma & séries|c2_shortanim|Animations courtes|court métrage animation|animated short
+Cinéma & séries|c2_trailers|Bandes-annonces|bande annonce|trailer
+Savoir|k2_ocean|Océanographie|océanographie|oceanography
+Savoir|k2_climate|Climat|réchauffement climatique|climate change
+Savoir|k2_energy|Énergie|énergie nucléaire solaire|energy
+Savoir|k2_brain|Mémoire & cerveau|mémoire cerveau|memory brain
+Savoir|k2_sleep|Science du sommeil|science sommeil|sleep science
+Savoir|k2_ancient_egypt|Égypte ancienne|egypte ancienne|ancient egypt
+Savoir|k2_rome|Rome antique|rome antique|ancient rome
+Savoir|k2_vikings|Vikings|vikings|vikings
+Savoir|k2_napoleon|Napoléon|napoléon|napoleon
+Savoir|k2_ww1|Première Guerre mondiale|première guerre mondiale|world war 1
+Savoir|k2_coldwar|Guerre froide|guerre froide|cold war
+Savoir|k2_geopolitics|Géopolitique|géopolitique|geopolitics
+Savoir|k2_economics|Économie expliquée|économie expliquée|economics explained
+Savoir|k2_logic|Logique & énigmes|énigme logique|logic puzzles
+Savoir|k2_languages|Linguistique|linguistique|linguistics
+Savoir|k2_flags|Drapeaux & pays|pays du monde|countries of the world
+Savoir|k2_maps|Cartes|cartographie|maps
+Savoir|k2_inventions|Inventions|inventions|inventions
+Savoir|k2_disasters|Catastrophes|catastrophe naturelle|natural disasters
+Savoir|k2_aliens|Vie extraterrestre|extraterrestre|alien life
+Tech|t2_iphone|iPhone|iphone|iphone
+Tech|t2_samsung|Samsung|samsung|samsung
+Tech|t2_xiaomi|Xiaomi|xiaomi|xiaomi
+Tech|t2_tablet|Tablettes|tablette|tablet
+Tech|t2_laptop|Ordinateurs portables|ordinateur portable|laptop
+Tech|t2_gamingpc|PC gaming|pc gaming|gaming pc
+Tech|t2_console|Consoles|console|console
+Tech|t2_watch|Montres connectées|montre connectée|smartwatch
+Tech|t2_tv|TV & home cinéma|télévision home cinéma|tv home theater
+Tech|t2_smarthome|Maison connectée|maison connectée|smart home
+Tech|t2_chatgpt|ChatGPT & IA|chatgpt|chatgpt
+Tech|t2_aiart|Images IA|image ia|ai art
+Tech|t2_apps|Applications|application mobile|mobile apps
+Tech|t2_tips|Astuces téléphone|astuces téléphone|phone tips
+Tech|t2_privacy|Vie privée en ligne|vie privée internet|online privacy
+Tech|t2_internet|Histoire d'internet|histoire internet|internet history
+Tech|t2_retro|Rétro tech|vieille technologie|retro tech
+Tech|t2_teardown|Démontages|démontage|teardown
+Tech|t2_software|Logiciels|logiciel tutoriel|software tutorial
+Tech|t2_excel|Excel & bureautique|excel tutoriel|excel tutorial
+Vie pratique|l2_meal|Repas de la semaine|batch cooking|meal prep
+Vie pratique|l2_healthyfood|Manger sain|manger sain|healthy eating
+Vie pratique|l2_desserts|Desserts|dessert recette|dessert recipe
+Vie pratique|l2_bread|Pain maison|pain maison|homemade bread
+Vie pratique|l2_italian|Cuisine italienne|cuisine italienne|italian food
+Vie pratique|l2_asian|Cuisine asiatique|cuisine asiatique|asian food
+Vie pratique|l2_african|Cuisine africaine|cuisine africaine|african food
+Vie pratique|l2_halal|Cuisine halal|recette halal|halal recipes
+Vie pratique|l2_restaurant|Tests de restaurants|test restaurant|restaurant review
+Vie pratique|l2_fastfood|Fast-food|fast food|fast food
+Vie pratique|l2_budget|Budget & économies|économiser argent|saving money
+Vie pratique|l2_side|Gagner de l'argent|gagner de l'argent|make money
+Vie pratique|l2_entrepreneur|Entrepreneuriat|entrepreneur|entrepreneurship
+Vie pratique|l2_marketing|Marketing|marketing|marketing
+Vie pratique|l2_productivity|Productivité|productivité|productivity
+Vie pratique|l2_selfcare|Prendre soin de soi|prendre soin de soi|self care
+Vie pratique|l2_mental|Santé mentale|santé mentale|mental health
+Vie pratique|l2_moving|Déménagement & rangement|rangement maison|home organization
+Vie pratique|l2_renovation|Rénovation|rénovation maison|home renovation
+Vie pratique|l2_plumbing|Plomberie & électricité|plomberie électricité|plumbing electrical
+Voyage & nature|v2_spain|Espagne|voyage espagne|spain travel
+Voyage & nature|v2_italy|Italie|voyage italie|italy travel
+Voyage & nature|v2_morocco|Maroc|voyage maroc|morocco travel
+Voyage & nature|v2_dubai|Dubaï|dubaï|dubai
+Voyage & nature|v2_thailand|Thaïlande|voyage thaïlande|thailand travel
+Voyage & nature|v2_canada|Canada|voyage canada|canada travel
+Voyage & nature|v2_islands|Îles paradisiaques|île paradisiaque|tropical islands
+Voyage & nature|v2_roadtrip|Road trip|road trip|road trip
+Voyage & nature|v2_backpack|Sac à dos|voyage sac à dos|backpacking
+Voyage & nature|v2_cheaptravel|Voyager pas cher|voyager pas cher|budget travel
+Voyage & nature|v2_cats|Chats|chat|cats
+Voyage & nature|v2_dogs|Chiens|chien|dogs
+Voyage & nature|v2_horses|Chevaux|chevaux|horses
+Voyage & nature|v2_wildlife_africa|Safari|safari|safari
+Voyage & nature|v2_jungle|Jungle|jungle|jungle
+Voyage & nature|v2_desert|Déserts|désert|desert
+Voyage & nature|v2_polar|Pôles & glaciers|pôle glacier|polar glaciers
+Voyage & nature|v2_storms|Orages & tempêtes|orage tempête|storms
+Voyage & nature|v2_space_views|Terre vue de l'espace|terre vue de l'espace|earth from space
+Voyage & nature|v2_relax_nature|Sons de la nature|sons de la nature|nature sounds
+Art & création|a2_sketch|Croquis|croquis|sketching
+Art & création|a2_watercolor|Aquarelle|aquarelle|watercolor
+Art & création|a2_manga_draw|Dessin manga|dessiner manga|manga drawing
+Art & création|a2_sculpture|Sculpture|sculpture|sculpture
+Art & création|a2_resin|Résine|art résine|resin art
+Art & création|a2_jewelry|Bijoux|bijoux fait main|jewelry making
+Art & création|a2_candles|Bougies & savons|bougies savon fait maison|candle soap making
+Art & création|a2_photoedit|Retouche photo|retouche photo|photo editing
+Art & création|a2_thumbnail|Création YouTube|créer chaîne youtube|youtube tips
+Art & création|a2_music_video|Clips & réalisation|réalisation clip|music video making
+Art & création|a2_stopmotion|Stop motion|stop motion|stop motion
+Art & création|a2_museums|Musées|musée visite|museum tour
+Art & création|a2_artists|Grands peintres|peintre célèbre|famous painters
+Art & création|a2_interior|Design d'intérieur|design intérieur|interior design
+Art & création|a2_florist|Art floral|art floral|floral design
+Info|i2_tech_news|Actu IA|actualité intelligence artificielle|ai news
+Info|i2_space_news|Actu espace|actualité espace|space news
+Info|i2_crypto_news|Actu crypto|actualité crypto|crypto news
+Info|i2_auto_news|Actu auto|actualité automobile|car news
+Info|i2_game_news|Actu jeux|actualité jeux|game news
+Info|i2_explained|L'actu expliquée|actualité expliquée|news explained
+Info|i2_history_now|Histoire et actualité|histoire actualité|history and news
+Info|i2_elections|Élections|élections|elections
+Enfants|e2_animals_kids|Animaux pour enfants|animaux enfants|animals for kids
+Enfants|e2_science_kids|Sciences pour enfants|science enfants|science for kids
+Enfants|e2_drawing_kids|Dessin pour enfants|dessin enfant|drawing for kids
+Enfants|e2_songs_kids|Chansons pour enfants|chanson enfant|kids songs
+Enfants|e2_cartoons_classic|Dessins animés classiques|dessin animé classique|classic cartoons
 `
 export interface Interest {
   key: string

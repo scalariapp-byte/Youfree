@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { VideoCard, VideoGrid, Skeletons, ShortCard } from '../components/VideoCard'
 import { Avatar } from '../components/Layout'
+import { ChannelRail } from '../components/ChannelRail'
 import { ErrorBox } from '../components/ErrorBox'
 import { Infinite } from '../components/Infinite'
 import { useAsync } from '../lib/useAsync'
@@ -35,7 +36,8 @@ export function Channel() {
   const isGoogle = google.some((s) => s.id === id)
 
   return (
-    <div className="page">
+    <div className="page with-rail">
+      <ChannelRail />
       {c && (
         <>
           {c.banner && <div className="banner" style={{ backgroundImage: `url(${c.banner})` }} />}

@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom'
 import { VideoCard, VideoGrid, Skeletons, ShortsShelf } from '../components/VideoCard'
 import { Avatar } from '../components/Layout'
 import { ChannelFinder } from '../components/ChannelFinder'
+import { NotifPanel } from '../components/NotifPanel'
+import { Sheet } from '../components/Sheet'
 import { Icon } from '../components/Icon'
 import { ErrorBox } from '../components/ErrorBox'
 import { useAsync } from '../lib/useAsync'
@@ -18,6 +20,7 @@ export function Subscriptions() {
   const [tab, setTab] = useState<'feed' | 'channels' | 'find'>('feed')
   const [force, setForce] = useState(0)
   const [filterQ, setFilterQ] = useState('')
+  const [notif, setNotif] = useState(false)
   const key = all.map((c) => c.id).join(',')
   const feed = useAsync(() => (all.length ? getSubscriptionFeed(all, force > 0) : Promise.resolve([])), [key, force, blocked.length])
 
@@ -32,14 +35,17 @@ export function Subscriptions() {
   return (
     <div className="page">
       <h1 className="page-title">Abonnements</h1>
-      <Link to="/settings?pane=notifs" className="notif-panel">
+      <button className="notif-panel" onClick={() => setNotif(true)}>
         <Icon name="bell" />
         <span>
-          <strong>Notifications</strong>
-          <small>Choisir les chaînes qui te préviennent des nouvelles vidéos</small>
+          <strong>Notifications {settings.notificationsOn ? '' : '(désactivées)'}</strong>
+          <small>{settings.notificationsOn ? `${settings.notifyChannels.length} chaîne(s) te préviennent` : 'Touche pour les réactiver'}</small>
         </span>
         <Icon name="fwd" size={18} />
-      </Link>
+      </button>
+      <Sheet open={notif} onClose={() => setNotif(false)} title="Notifications">
+        <NotifPanel />
+      </Sheet>
       <div className="chips">
         <button className={`chip ${tab === 'feed' ? 'on' : ''}`} onClick={() => setTab('feed')}>
           Dernières vidéos

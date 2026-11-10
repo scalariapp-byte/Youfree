@@ -19,6 +19,7 @@ export async function askPermission() {
 }
 
 export async function checkNew() {
+  if (!getSettings().notificationsOn) return
   const ids = getSettings().notifyChannels
   if (!isNative() || !ids.length) return
   const seen = last()

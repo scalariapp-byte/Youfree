@@ -27,6 +27,7 @@ export interface Settings {
   tabs: string[]
   notifyChannels: string[]
   captions: boolean
+  notificationsOn: boolean
   shortsBackground: boolean
   autoUpdate: boolean
   strictLang: boolean
@@ -85,6 +86,7 @@ const DEFAULT_SETTINGS: Settings = {
   tabs: ['/', '/shorts', '/music', '/subscriptions', '/library'],
   notifyChannels: [],
   captions: false,
+  notificationsOn: true,
   shortsBackground: false,
   autoUpdate: true,
   strictLang: true,

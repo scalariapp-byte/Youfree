@@ -1,12 +1,13 @@
-// Sauvegarde des données Youtmusic (abonnements, historique, « Plus tard », réglages) dans
-// l'espace privé de l'appli sur le Google Drive de l'utilisateur (dossier appDataFolder).
+// Sauvegarde des données Youtmusic (abonnements, historique, j'aime, playlists, réglages) dans
+// un fichier visible « Youtmusic - sauvegarde.json » du Google Drive de l'utilisateur.
 // Aucun accès au compte YouTube.
 import { SocialLogin } from '@capgo/capacitor-social-login'
 import { localFetch } from './nativeFetch'
 import { exportAll, getSettings, mergeAll } from './storage'
 
-const SCOPE = 'https://www.googleapis.com/auth/drive.appdata'
-const FILE = 'youfree.json'
+// drive.file : fichier visible « Youtmusic - sauvegarde.json » dans le Drive ; l'appli ne voit que ses propres fichiers.
+const SCOPE = 'https://www.googleapis.com/auth/drive.file'
+const FILE = 'Youtmusic - sauvegarde.json'
 const META = 'youfree:cloud'
 
 export interface CloudState {
@@ -55,7 +56,7 @@ async function drive(path: string, init: RequestInit = {}, retry = true): Promis
 }
 
 async function findFile(): Promise<string | null> {
-  const r = await drive(`drive/v3/files?spaces=appDataFolder&fields=files(id)&q=${encodeURIComponent(`name='${FILE}'`)}`)
+  const r = await drive(`drive/v3/files?fields=files(id)&q=${encodeURIComponent(`name='${FILE}' and trashed=false`)}`)
   return (await r.json()).files?.[0]?.id ?? null
 }
 
@@ -68,7 +69,7 @@ export async function sync(): Promise<CloudState> {
     await drive(`upload/drive/v3/files/${id}?uploadType=media`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body })
   } else {
     const boundary = 'youfree' + Date.now()
-    const multipart = `--${boundary}\r\nContent-Type: application/json\r\n\r\n${JSON.stringify({ name: FILE, parents: ['appDataFolder'] })}\r\n--${boundary}\r\nContent-Type: application/json\r\n\r\n${body}\r\n--${boundary}--`
+    const multipart = `--${boundary}\r\nContent-Type: application/json\r\n\r\n${JSON.stringify({ name: FILE, mimeType: 'application/json' })}\r\n--${boundary}\r\nContent-Type: application/json\r\n\r\n${body}\r\n--${boundary}--`
     await drive('upload/drive/v3/files?uploadType=multipart', { method: 'POST', headers: { 'Content-Type': `multipart/related; boundary=${boundary}` }, body: multipart })
   }
   const s = { ...cloudState(), lastSync: Date.now() }

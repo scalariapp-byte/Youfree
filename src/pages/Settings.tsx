@@ -14,6 +14,7 @@ import { Sheet } from '../components/Sheet'
 import { Icon } from '../components/Icon'
 import { InterestPicker } from '../components/InterestPicker'
 import { DragList } from '../components/DragList'
+import { NotifPanel } from '../components/NotifPanel'
 
 const REGIONS = ['FR', 'BE', 'CH', 'CA', 'LU', 'MA', 'DZ', 'TN', 'SN', 'US', 'GB', 'DE', 'ES', 'IT', 'PT', 'BR', 'MX']
 
@@ -123,7 +124,7 @@ function CloudSection() {
   return (
     <section>
       <h2>Sauvegarde Google</h2>
-      <p className="muted">Connecte-toi avec Google pour sauvegarder et synchroniser tes abonnements, ton historique et tes réglages sur ton Google Drive (espace privé de l’appli). Aucun accès à ton compte YouTube.</p>
+      <p className="muted">Tes abonnements, ton historique, tes j’aime, tes playlists et tes réglages sont enregistrés dans un fichier « Youtmusic - sauvegarde » de ton Google Drive, et synchronisés automatiquement. Aucun accès à ton compte YouTube.</p>
       {st.email ? (
         <>
           <div className="cloud-user">
@@ -236,36 +237,36 @@ export function Settings() {
 
   const GROUPS: [string, [Pane, string, string, string][]][] = [
     [
-      'Contenu',
+      'Mes contenus',
       [
-        ['interests', 'music', 'Centres d’intérêt', `${s.interests.length} sélectionnés`],
-        ['content', 'search', 'Langue, région, chaînes masquées', `${LANGS.find((l) => l.code === s.lang)?.label ?? ''} · ${blocked.length} masquée(s)`],
+        ['interests', 'music', 'Ce que j’aime regarder', `${s.interests.length} thèmes choisis`],
+        ['content', 'search', 'Langue, pays et chaînes cachées', `${LANGS.find((l) => l.code === s.lang)?.label ?? ''} · ${blocked.length} masquée(s)`],
         ['shorts', 'shorts', 'Shorts', s.showShorts ? 'Activés · boutons et côté' : 'Désactivés'],
-        ['notifs', 'bell', 'Notifications', `${s.notifyChannels.length} chaîne(s)`],
+        ['notifs', 'bell', 'Notifications', s.notificationsOn ? `${s.notifyChannels.length} chaîne(s)` : 'Désactivées'],
       ],
     ],
     [
-      'Affichage',
+      'Apparence',
       [
-        ['home', 'home', 'Accueil et onglets', 'Sections, ordre, onglets visibles'],
-        ['look', 'settings', 'Apparence', 'Thème, couleur, fond, texte, animations'],
+        ['home', 'home', 'Page d’accueil et onglets', 'Ce qui s’affiche et dans quel ordre'],
+        ['look', 'settings', 'Couleurs et affichage', 'Thème, couleur, fond, taille du texte'],
       ],
     ],
     [
       'Lecture',
       [
-        ['play', 'play', 'Vidéos', 'Lecteur, qualité, vitesse, sous-titres, traduction'],
+        ['play', 'play', 'Vidéos', 'Qualité, vitesse, sous-titres, traduction'],
         ['music', 'music', 'Musique', 'Qualité audio'],
       ],
     ],
     [
-      'Compte et données',
+      'Sauvegarde',
       [
-        ['cloud', 'user', 'Sauvegarde Google', cloudState().email || 'Non connecté'],
-        ['data', 'download', 'Données', `${subs.length} abonnements · import, export, cache`],
+        ['cloud', 'user', 'Sauvegarder sur Google Drive', cloudState().email || 'Non connecté'],
+        ['data', 'download', 'Mes données', `${subs.length} abonnements · importer, exporter`],
       ],
     ],
-    ['Aide', [['help', 'chart', 'Mises à jour, aide et diagnostic', `Version ${import.meta.env.VITE_BUILD ?? 'dev'}`]]],
+    ['Aide', [['help', 'chart', 'Mises à jour et aide', `Version ${import.meta.env.VITE_BUILD ?? 'dev'}`]]],
   ]
   const MENU = GROUPS.flatMap((g) => g[1])
   const title = MENU.find((m) => m[0] === pane)?.[2]
@@ -273,6 +274,24 @@ export function Settings() {
   return (
     <div className="page settings">
       <h1 className="page-title">Paramètres</h1>
+      <div className="settings-group">
+        <h4>L’essentiel</h4>
+        <div className="quick">
+          <Toggle on={s.theme !== 'light'} set={(v) => saveSettings({ theme: v ? 'dark' : 'light' })} label="Mode sombre" />
+          <Toggle on={s.showShorts} set={(v) => saveSettings({ showShorts: v })} label="Afficher les Shorts" />
+          <Toggle on={s.translateTitles} set={(v) => saveSettings({ translateTitles: v })} label="Traduire en français" hint="Titres, descriptions et commentaires" />
+          <Toggle on={s.strictLang} set={(v) => saveSettings({ strictLang: v })} label="Seulement des vidéos dans ma langue" />
+          <Toggle
+            on={s.notificationsOn}
+            set={async (v) => {
+              if (v) await askPermission()
+              saveSettings({ notificationsOn: v })
+            }}
+            label="Notifications"
+          />
+          <Toggle on={s.autoUpdate} set={(v) => saveSettings({ autoUpdate: v })} label="Me prévenir des mises à jour" />
+        </div>
+      </div>
       {GROUPS.map(([group, items]) => (
         <div key={group} className="settings-group">
           <h4>{group}</h4>
@@ -315,23 +334,7 @@ export function Settings() {
             </>
           )}
 
-          {pane === 'notifs' && (
-            <>
-              <p className="muted">Une notification quand une chaîne publie une vidéo (vérifié toutes les 30 min tant que l’appli tourne).</p>
-              {subs.length === 0 && <p className="muted">Abonne-toi d’abord à des chaînes (onglet Abonnements).</p>}
-              {subs.map((c) => (
-                <Toggle
-                  key={c.id}
-                  on={s.notifyChannels.includes(c.id)}
-                  label={c.title}
-                  set={async (v) => {
-                    if (v) await askPermission()
-                    saveSettings({ notifyChannels: v ? [...s.notifyChannels, c.id] : s.notifyChannels.filter((x) => x !== c.id) })
-                  }}
-                />
-              ))}
-            </>
-          )}
+          {pane === 'notifs' && <NotifPanel />}
 
           {pane === 'interests' && <InterestPicker value={s.interests} onChange={(v) => saveSettings({ interests: v })} />}
 
