@@ -9,6 +9,7 @@ import { canUseLocal } from '../lib/nativeFetch'
 import { getStreams, getStreamsOther, type Streams } from '../lib/stream'
 import { audioBlobUrl } from '../lib/blobAudio'
 import { log } from '../lib/log'
+import { netCap } from '../lib/net'
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 declare global {
@@ -114,7 +115,8 @@ function DirectPlayer({ id, start, onEnded, onFail: giveUp, loop, bare, paused, 
           else setAudioSrc(r.audio)
         }
         // Shorts : 1080p max (écran de téléphone) ; vidéos : qualité préférée.
-        const cap = bare ? Math.min(settings.quality, 1080) : settings.quality
+        // Qualité de départ limitée par la connexion (mauvais réseau : 144p-480p).
+        const cap = Math.min(bare ? Math.min(settings.quality, 1080) : settings.quality, netCap())
         setSrc((r.qualities.find((q) => q.height <= cap) ?? r.qualities[r.qualities.length - 1])?.url ?? r.video)
       },
       (e) => (log('vidéo', `${id} flux KO : ${(e as Error).message}`), ok && onFail((e as Error).message)),

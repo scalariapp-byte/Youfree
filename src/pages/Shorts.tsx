@@ -10,6 +10,7 @@ import { toggleLike, useLiked, useBlocked, useSettings } from '../lib/storage'
 import { applyFilters, getComments, getShorts, getVideos, search, type Video } from '../lib/youtube'
 import { useAsync } from '../lib/useAsync'
 import { onlyLang } from '../lib/i18n'
+import { isSlow } from '../lib/net'
 import { Sheet } from '../components/Sheet'
 import { VideoMenu, DownloadSheet } from '../components/VideoActions'
 import { toStored, Tr } from '../components/VideoCard'
@@ -216,7 +217,7 @@ export function Shorts() {
     const i = items.findIndex((x) => x.id === active)
     if (i >= items.length - 4) loadMore()
     // Précharge les flux des deux Shorts suivants : le défilement est instantané.
-    if (canUseLocal()) items.slice(i + 1, i + 3).forEach((x) => getStreams(x.id).catch(() => {}))
+    if (canUseLocal() && !isSlow()) items.slice(i + 1, i + 3).forEach((x) => getStreams(x.id).catch(() => {}))
   }, [active, items, loadMore])
 
   return (
@@ -274,7 +275,7 @@ export function Shorts() {
         <div className="shorts-feed" ref={feed}>
           {items.length === 0 && <div className="short-slide loading">Chargement…</div>}
           {applyFilters(items).map((v, i, list) => (
-            <ShortSlide key={v.id} v={v} active={v.id === active} near={list[i - 1]?.id === active} />
+            <ShortSlide key={v.id} v={v} active={v.id === active} near={!isSlow() && list[i - 1]?.id === active} />
           ))}
         </div>
         )

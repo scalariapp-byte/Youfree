@@ -252,6 +252,7 @@ export function Settings() {
             }}
             label="Notifications"
           />
+          <Toggle on={s.dataSaver} set={(v) => saveSettings({ dataSaver: v })} label="Économie de données" hint="Pour une connexion faible : 360p max, pas de préchargement" />
           <Toggle on={s.autoUpdate} set={(v) => saveSettings({ autoUpdate: v })} label="Me prévenir des mises à jour" />
         </div>
       </div>

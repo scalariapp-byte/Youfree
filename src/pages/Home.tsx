@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { getStreams } from '../lib/stream'
 import { canUseLocal } from '../lib/nativeFetch'
+import { isSlow } from '../lib/net'
 // Accueil : thèmes en haut, puis Reprendre, Shorts, Nouveautés des abonnements, Populaire.
 // Pas d'algorithme opaque, pas de jeux.
 import { Link } from 'react-router-dom'
@@ -111,7 +112,7 @@ export function Home() {
 
   const first = pop.videos.slice(0, 4).map((v) => v.id).join(',')
   useEffect(() => {
-    if (!first || !canUseLocal()) return
+    if (!first || !canUseLocal() || isSlow()) return
     const t = setTimeout(() => first.split(',').forEach((id) => getStreams(id).catch(() => {})), 1200)
     return () => clearTimeout(t)
   }, [first])

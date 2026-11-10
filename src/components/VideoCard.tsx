@@ -5,6 +5,7 @@ import { getVideos, type Video } from '../lib/youtube'
 import { prefetch } from '../lib/useAsync'
 import { getStreams } from '../lib/stream'
 import { canUseLocal } from '../lib/nativeFetch'
+import { isSlow } from '../lib/net'
 import { compact, duration, ago, decode } from '../lib/format'
 import type { StoredVideo } from '../lib/storage'
 import { Empty } from './ErrorBox'
@@ -40,7 +41,7 @@ export function warm(id: string) {
   // Appui maintenu 120 ms sans glisser = intention d'ouvrir ; un défilement annule.
   warmTimer = window.setTimeout(() => {
     prefetch(`v:${id}`, async () => (await getVideos([id]))[0])
-    if (canUseLocal()) getStreams(id).catch(() => {})
+    if (canUseLocal() && !isSlow()) getStreams(id).catch(() => {})
   }, 120)
 }
 const cancelWarm = () => clearTimeout(warmTimer)

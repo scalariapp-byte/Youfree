@@ -4,6 +4,7 @@ import type { Track } from './innertube'
 import { getStreams } from './stream'
 import { audioBlobUrl } from './blobAudio'
 import { log } from './log'
+import { isSlow } from './net'
 import { getSettings } from './storage'
 import { clearNowPlaying, setNowPlaying } from './background'
 
@@ -37,7 +38,7 @@ async function load(i: number) {
     const s = await getStreams(t.id)
     if (queue[index]?.id !== t.id) return
     // Plusieurs pistes audio candidates : si l'une est refusée, on passe à la suivante.
-    const low = getSettings().audioQuality === 'low'
+    const low = getSettings().audioQuality === 'low' || isSlow()
     const cands = s.formats
       .filter((f) => f.audio && !f.video)
       .sort((x, y) => (/mp4/.test(y.mime) ? 1 : 0) - (/mp4/.test(x.mime) ? 1 : 0) || (low ? x.bitrate - y.bitrate : y.bitrate - x.bitrate))
