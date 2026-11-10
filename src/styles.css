@@ -846,3 +846,4 @@ body { background: var(--bg); }
 .quick .pref { margin: 0; border: 0; border-radius: 0; background: none; padding: 14px 16px; animation: none; }
 .quick .pref + .pref { border-top: 1px solid var(--border); }
 .export-btn { width: 100%; justify-content: center; height: 48px; margin-bottom: 10px; }
+.notif-master strong { display: flex; align-items: center; gap: 8px; } .notif-master { margin-bottom: 12px; }

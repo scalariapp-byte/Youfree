@@ -3,8 +3,6 @@ import { Link } from 'react-router-dom'
 import { VideoCard, VideoGrid, Skeletons, ShortsShelf } from '../components/VideoCard'
 import { Avatar } from '../components/Layout'
 import { ChannelFinder } from '../components/ChannelFinder'
-import { NotifPanel } from '../components/NotifPanel'
-import { Sheet } from '../components/Sheet'
 import { Icon } from '../components/Icon'
 import { ErrorBox } from '../components/ErrorBox'
 import { useAsync } from '../lib/useAsync'
@@ -20,7 +18,6 @@ export function Subscriptions() {
   const [tab, setTab] = useState<'feed' | 'channels' | 'find'>('feed')
   const [force, setForce] = useState(0)
   const [filterQ, setFilterQ] = useState('')
-  const [notif, setNotif] = useState(false)
   const key = all.map((c) => c.id).join(',')
   const feed = useAsync(() => (all.length ? getSubscriptionFeed(all, force > 0) : Promise.resolve([])), [key, force, blocked.length])
 
@@ -35,17 +32,6 @@ export function Subscriptions() {
   return (
     <div className="page">
       <h1 className="page-title">Abonnements</h1>
-      <button className="notif-panel" onClick={() => setNotif(true)}>
-        <Icon name="bell" />
-        <span>
-          <strong>Notifications {settings.notificationsOn ? '' : '(désactivées)'}</strong>
-          <small>{settings.notificationsOn ? `${settings.notifyChannels.length} chaîne(s) te préviennent` : 'Touche pour les réactiver'}</small>
-        </span>
-        <Icon name="fwd" size={18} />
-      </button>
-      <Sheet open={notif} onClose={() => setNotif(false)} title="Notifications">
-        <NotifPanel />
-      </Sheet>
       <div className="chips">
         <button className={`chip ${tab === 'feed' ? 'on' : ''}`} onClick={() => setTab('feed')}>
           Dernières vidéos
@@ -66,6 +52,22 @@ export function Subscriptions() {
         <ChannelFinder />
       ) : tab === 'channels' ? (
         <div>
+          <div className="pref notif-master">
+            <span>
+              <strong>
+                <Icon name="bell" size={18} fill={settings.notificationsOn} /> Notifications
+              </strong>
+              <small>{settings.notificationsOn ? 'Touche la cloche d’une chaîne pour être prévenu de ses vidéos' : 'Toutes désactivées'}</small>
+            </span>
+            <button
+              className={`switch ${settings.notificationsOn ? 'on' : ''}`}
+              aria-label="Toutes les notifications"
+              onClick={async () => {
+                if (!settings.notificationsOn) await askPermission()
+                saveSettings({ notificationsOn: !settings.notificationsOn })
+              }}
+            />
+          </div>
           <div className="music-search">
             <Icon name="search" size={18} />
             <input value={filterQ} onChange={(e) => setFilterQ(e.target.value)} placeholder={`Filtrer mes ${all.length} chaînes`} />
@@ -74,7 +76,7 @@ export function Subscriptions() {
             {all
               .filter((c) => c.title.toLowerCase().includes(filterQ.toLowerCase()))
               .map((c) => {
-                const bell = settings.notifyChannels.includes(c.id)
+                const bell = settings.notificationsOn && settings.notifyChannels.includes(c.id)
                 return (
                   <div key={c.id} className="channel-row">
                     <Link to={`/channel/${c.id}`}>
@@ -82,7 +84,7 @@ export function Subscriptions() {
                       <span>{c.title}</span>
                     </Link>
                     <div className="row-btns tight">
-                      <button
+                      {settings.notificationsOn && <button
                         className={`icon-btn small ${bell ? 'on' : ''}`}
                         aria-label="Notifications"
                         onClick={async () => {
@@ -91,7 +93,7 @@ export function Subscriptions() {
                         }}
                       >
                         <Icon name="bell" size={18} fill={bell} />
-                      </button>
+                      </button>}
                       <button className="btn ghost small" onClick={() => confirm(`Se désabonner de ${c.title} ?`) && toggleLocalSub(c)}>
                         Se désabonner
                       </button>
